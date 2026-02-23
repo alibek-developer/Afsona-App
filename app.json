@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Afsona",
+    "slug": "afsona-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.alibekqasjh.afsonaapp",
+      "newArchEnabled": true  // Bu qo'shildi: Reanimated v4 uchun New Architecture iOS da ham kerak
+    },
+    "android": {
+      "package": "com.alibekqasjh.afsonaapp",
+      "newArchEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#000000"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "@react-native-community/datetimepicker"  // Bu to'g'ri, o'zgartirilmadi
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7c9ce344-3fcf-4364-83f9-50229dea0998"
+      }
+    },
+    "owner": "alibekqasjh"
+  }
+}
