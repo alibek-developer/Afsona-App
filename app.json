@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.alibekqasjh.afsonaapp",
-      "newArchEnabled": true  // Bu qo'shildi: Reanimated v4 uchun New Architecture iOS da ham kerak
+      "newArchEnabled": true
     },
     "android": {
       "package": "com.alibekqasjh.afsonaapp",
@@ -27,7 +27,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "@react-native-community/datetimepicker"  // Bu to'g'ri, o'zgartirilmadi
+      "@react-native-community/datetimepicker"  
     ],
     "extra": {
       "router": {},

@@ -3,7 +3,6 @@ export const RESTAURANT_LOCATION = {
   lng: 60.29214538518358,
 
    
-	
 	address: 'Restaurant',
 }
 

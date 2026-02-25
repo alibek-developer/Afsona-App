@@ -27,15 +27,11 @@ export const useOrders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      // Courier filtering: delivery orders with status IN ('ready','on_the_way'), valid coordinates
-      // Courier should see 'delivery' type orders with ready/on_the_way status
+      // Courier filtering: orders with status 'ready'
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('type', 'delivery')
-        .in('status', ['ready', 'on_the_way'])
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
+        .eq('status', 'ready')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -64,7 +60,7 @@ export const useOrders = () => {
     fetchOrders();
 
     // ==================== REALTIME SUBSCRIPTION ====================
-    // Create subscription with granular state updates for ALL delivery orders
+    // Create subscription with granular state updates for ALL ready orders
     const channel = supabase
       .channel('courier_orders_realtime')
       .on(
@@ -76,14 +72,14 @@ export const useOrders = () => {
           if (payload.eventType === 'INSERT') {
             const newOrder = payload.new as Order;
             
-            // Only add if type is 'delivery', status is 'ready' or 'on_the_way', and has valid coordinates
-            if (newOrder.type === 'delivery' && ['ready', 'on_the_way'].includes(newOrder.status) && newOrder.latitude !== null && newOrder.longitude !== null) {
+            // Only add if status is 'ready'
+            if (newOrder.status === 'ready') {
               setOrders((prev) => {
                 const alreadyExists = prev.some(o => o.id === newOrder.id);
                 if (alreadyExists) return prev;
                 return [newOrder, ...prev];
               });
-              console.log('[useOrders] New ready delivery order added to list');
+              console.log('[useOrders] New ready order added to list');
             }
           } 
           else if (payload.eventType === 'UPDATE') {
@@ -93,28 +89,10 @@ export const useOrders = () => {
             setOrders((prev) => {
               const exists = prev.some(o => o.id === updatedOrder.id);
               
-              if (updatedOrder.type !== 'delivery') {
-                // If it's not a delivery order, remove it
+              if (updatedOrder.status !== 'ready') {
+                // If status is not 'ready', remove it
                 if (exists) {
-                  console.log('[useOrders] Non-delivery order removed from list');
-                  return prev.filter(o => o.id !== updatedOrder.id);
-                }
-                return prev;
-              }
-
-              if (!['ready', 'on_the_way'].includes(updatedOrder.status)) {
-                // If status is not 'ready' or 'on_the_way', remove it
-                if (exists) {
-                  console.log('[useOrders] Order with non-courier status removed from list');
-                  return prev.filter(o => o.id !== updatedOrder.id);
-                }
-                return prev;
-              }
-
-              if (updatedOrder.latitude === null || updatedOrder.longitude === null) {
-                // If coordinates are missing, remove it
-                if (exists) {
-                  console.log('[useOrders] Order with missing coordinates removed from list');
+                  console.log('[useOrders] Order with non-ready status removed from list');
                   return prev.filter(o => o.id !== updatedOrder.id);
                 }
                 return prev;

@@ -64,6 +64,8 @@ export interface Order {
   courier_id?: string
   device_id?: string
   source?: string
+  courier_latitude?: number
+  courier_longitude?: number
   picked_at?: string
   delivered_at?: string
   notes?: string

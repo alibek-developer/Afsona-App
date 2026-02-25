@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
+import * as Location from 'expo-location'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -132,6 +133,7 @@ const CourierOrderDetailScreen = () => {
 	const { order: initialOrder, currentCourierId } = route.params as any
 	const [order, setOrder] = useState(initialOrder)
 	const [isUpdating, setIsUpdating] = useState(false)
+	const [locationSubscription, setLocationSubscription] = useState<any>(null)
 	const mapRef = useRef<MapView>(null)
 
 	const isAccepted =
@@ -153,6 +155,67 @@ const CourierOrderDetailScreen = () => {
 				longitude: location.coords.longitude,
 			}
 		: null
+
+	// Function to save courier location to Supabase
+	const saveCourierLocation = async (lat: number, lng: number) => {
+		try {
+			const { error } = await supabase
+				.from('orders')
+				.update({
+					courier_latitude: lat,
+					courier_longitude: lng,
+				})
+				.eq('id', order.id);
+
+			if (error) {
+				console.error('Error saving courier location:', error);
+			}
+		} catch (err) {
+			console.error('Error saving courier location:', err);
+		}
+	};
+
+	// Effect to handle location tracking based on order status
+	useEffect(() => {
+		const startLocationTracking = async () => {
+			if (order.status === 'on_the_way' && order.courier_id === currentCourierId) {
+				// Request location permissions
+				let { status } = await Location.requestForegroundPermissionsAsync();
+				if (status !== 'granted') {
+					Alert.alert('Xatolik', 'Joylashuv ruxsatnomasi berilmadi');
+					return;
+				}
+
+				// Start watching position
+				const subscription = await Location.watchPositionAsync(
+					{
+						accuracy: Location.Accuracy.High,
+						timeInterval: 5000, // Update every 5 seconds
+						distanceInterval: 10, // Update every 10 meters
+					},
+					(position) => {
+						saveCourierLocation(position.coords.latitude, position.coords.longitude);
+					}
+				);
+
+				setLocationSubscription(subscription);
+			} else if (locationSubscription) {
+				// Stop tracking if status is not 'on_the_way' or courier not assigned
+				locationSubscription.remove();
+				setLocationSubscription(null);
+			}
+		};
+
+		startLocationTracking();
+
+		// Cleanup function
+		return () => {
+			if (locationSubscription) {
+				locationSubscription.remove();
+				setLocationSubscription(null);
+			}
+		};
+	}, [order.status, order.courier_id, currentCourierId]);
 
 	// Auto-fit map when both markers exist
 	useEffect(() => {
@@ -176,13 +239,31 @@ const CourierOrderDetailScreen = () => {
 
 	const handleAccept = async () => {
 		setIsUpdating(true)
+		
+		// Get current location to save as initial courier position
+		let location = null;
+		try {
+			await Location.requestForegroundPermissionsAsync();
+			location = await Location.getCurrentPositionAsync({});
+		} catch (err) {
+			console.error('Error getting current location:', err);
+		}
+
+		const updateData: any = {
+			status: 'on_the_way',
+			courier_id: currentCourierId,
+			picked_at: new Date().toISOString(),
+		};
+
+		// Add courier location if available
+		if (location) {
+			updateData.courier_latitude = location.coords.latitude;
+			updateData.courier_longitude = location.coords.longitude;
+		}
+
 		const { error } = await supabase
 			.from('orders')
-			.update({
-				status: 'on_the_way',
-				courier_id: currentCourierId,
-				picked_at: new Date().toISOString(),
-			})
+			.update(updateData)
 			.eq('id', order.id)
 
 		if (error) {
@@ -216,6 +297,48 @@ const CourierOrderDetailScreen = () => {
 			Linking.openURL(`tel:${order.customer_phone}`)
 		}
 	}
+
+	const handleOpenInGoogleMaps = () => {
+	if (!deliveryCoords) {
+		Alert.alert('Xatolik', 'Mijoz joylashuvi topilmadi')
+		return
+	}
+
+	const { latitude, longitude } = deliveryCoords
+
+	// Android uchun Google Maps navigation
+	const url = `google.navigation:q=${latitude},${longitude}`
+
+	Linking.canOpenURL(url)
+		.then((supported) => {
+			if (supported) {
+				return Linking.openURL(url)
+			} else {
+				// Fallback browser Google Maps
+				const browserUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
+				return Linking.openURL(browserUrl)
+			}
+		})
+		.catch(() => {
+			Alert.alert('Xatolik', 'Google Maps ochilmadi')
+		})
+}
+
+const handleCallCustomer = async () => {
+  if (!order?.phone) {
+    Alert.alert('Xatolik', 'Telefon raqam topilmadi')
+    return
+  }
+console.log(order.phone)
+  const cleanedPhone = order.phone.replace(/\s+/g, '')
+  const phoneUrl = `tel:${cleanedPhone}`
+
+  try {
+    await Linking.openURL(phoneUrl)
+  } catch (error) {
+    Alert.alert('Xatolik', 'Telefon ilovasi ochilmadi')
+  }
+}
 
 	return (
 		<View style={styles.container}>
@@ -258,6 +381,25 @@ const CourierOrderDetailScreen = () => {
 				>
 					<MaterialCommunityIcons name='arrow-left' size={22} color='#111827' />
 				</TouchableOpacity>
+				{/* Open in Google Maps */}
+				{deliveryCoords && (
+					<TouchableOpacity
+						style={[styles.floatingNavigate, { top: insets.top + 10 }]}
+						onPress={() => handleOpenInGoogleMaps(deliveryCoords)}
+					>
+						<MaterialCommunityIcons name='navigation' size={22} color='#FFF' />
+					</TouchableOpacity>
+				)}
+				{/* Call Customer */}
+				{order?.phone && (
+					<TouchableOpacity
+						style={[styles.floatingCall, { top: insets.top + 70 }]}
+						onPress={() => handleCallCustomer(order.phone || '')}
+						
+					>
+						<MaterialCommunityIcons name='phone' size={22} color='#FFF' />
+					</TouchableOpacity>
+				)}
 
 				{/* Map Legend (only if courier marker visible) */}
 				{courierCoords && isAccepted && (
@@ -570,6 +712,34 @@ const styles = StyleSheet.create({
 		paddingVertical: 10,
 		borderRadius: 14,
 	},
+	floatingNavigate: {
+	position: 'absolute',
+	right: 16,
+	width: 48,
+	height: 48,
+	borderRadius: 24,
+	backgroundColor: '#FF0000',
+	alignItems: 'center',
+	justifyContent: 'center',
+	shadowColor: '#FF0000',
+	shadowOpacity: 0.4,
+	shadowRadius: 8,
+	elevation: 8,
+},
+floatingCall: {
+	position: 'absolute',
+	right: 16,
+	width: 48,
+	height: 48,
+	borderRadius: 24,
+	backgroundColor: '#2ECC71',
+	alignItems: 'center',
+	justifyContent: 'center',
+	shadowColor: '#2ECC71',
+	shadowOpacity: 0.4,
+	shadowRadius: 8,
+	elevation: 8,
+},
 	deliveredText: { color: '#10B981', fontWeight: '700', fontSize: 15 },
 })
 
