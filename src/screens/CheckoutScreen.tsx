@@ -1,7 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Qo'shildi
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Location from 'expo-location';
+import { Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { useMemo, useState } from 'react';
 import {
     ActivityIndicator,
@@ -20,7 +22,7 @@ import {
 } from 'react-native';
 import { useCart } from '../context/CartContext';
 import { useOrder } from '../context/OrderContext';
-import { getOrCreateDeviceId } from '../lib/auth'; // Qo'shildi
+import { getOrCreateDeviceId } from '../lib/auth';
 import { MAX_DELIVERY_RADIUS_KM } from '../lib/constants';
 import { supabase } from '../lib/supabase';
 import {
@@ -50,6 +52,88 @@ const CheckoutScreen = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [tableNumber, setTableNumber] = useState<string>('')
   const [showTableModal, setShowTableModal] = useState(false)
+
+  const createPaymentUrl = async (orderId: string, amount: number): Promise<string | null> => {
+    try {
+      const functionUrl = Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_FUNCTION_CREATE_PAYMENT 
+        || process.env.EXPO_PUBLIC_SUPABASE_FUNCTION_CREATE_PAYMENT;
+      
+      if (!functionUrl) {
+        Alert.alert('Xato', 'To\'lov sozlamalari topilmadi');
+        return null;
+      }
+
+      const appScheme = Constants.expoConfig?.extra?.EXPO_PUBLIC_APP_SCHEME 
+        || process.env.EXPO_PUBLIC_APP_SCHEME 
+        || 'afsona';
+      
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_id: orderId,
+          amount: Math.round(amount * 100),
+          return_url: `${appScheme}://payment-success`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.payment_url) {
+        return data.payment_url;
+      } else {
+        Alert.alert('Xato', data.error || 'To\'lov yaratishda xatolik');
+        return null;
+      }
+    } catch (err: any) {
+      console.error('Payment URL error:', err);
+      Alert.alert('Xato', `To\'lov yaratishda xatolik: ${err.message}`);
+      return null;
+    }
+  };
+
+  const openPaymentUrl = async (paymentUrl: string): Promise<boolean> => {
+    try {
+      const canOpen = await Linking.canOpenURL(paymentUrl);
+      if (canOpen) {
+        await Linking.openURL(paymentUrl);
+        return true;
+      } else {
+        Alert.alert('Xato', 'Brauzerni ochib bo\'lmadi');
+        return false;
+      }
+    } catch (err: any) {
+      console.error('Open URL error:', err);
+      Alert.alert('Xato', `Brauzerni ochishda xatolik: ${err.message}`);
+      return false;
+    }
+  };
+
+  const handleClickPayment = async (orderId: string, amount: number) => {
+    const paymentUrl = await createPaymentUrl(orderId, amount);
+    if (paymentUrl) {
+      const opened = await openPaymentUrl(paymentUrl);
+      if (opened) {
+        clearCart();
+        navigation.reset({
+          index: 0,
+          routes: [
+            { name: 'Main' },
+            { 
+              name: 'PaymentSuccess', 
+              params: { orderId, amount } 
+            },
+          ],
+        });
+      }
+    }
+  };
 
   const totals = useMemo(() => {
     const s = getTotalPrice()
@@ -135,32 +219,34 @@ const CheckoutScreen = () => {
 
     setIsSubmitting(true)
     try {
-      // 1. Qurilma ID-sini olamiz
       const deviceId = await getOrCreateDeviceId();
 
-      // 2. Buyurtmani device_id bilan birga yuboramiz
-      const { error } = await supabase.from('orders').insert([
+      const { data, error } = await supabase.from('orders').insert([
         {
           customer_name: customerName,
-          phone: customerPhone, // Fixed column name
+          phone: customerPhone,
           device_id: deviceId,
           delivery_address: orderType === 'delivery' ? address : null,
           latitude: orderType === 'delivery' ? coords?.latitude : null,
           longitude: orderType === 'delivery' ? coords?.longitude : null,
           table_number: orderType === 'dine-in' ? tableNumber : null,
-          type: orderType, // Fixed column name
+          type: orderType,
           items: cartItems,
           total_amount: totals.grandTotal,
           payment_method: paymentMethod,
           status: 'yangi',
           source: 'mobile_app'
         },
-      ])
+      ]).select('id').single();
 
       if (error) throw error
 
-      // Raqamni eslab qolish (OrdersScreen filtrini kuchaytirish uchun)
       await AsyncStorage.setItem('phone', customerPhone);
+
+      if (paymentMethod === 'click') {
+        await handleClickPayment(data.id, totals.grandTotal);
+        return;
+      }
 
       clearCart()
       Alert.alert('Rahmat!', 'Buyurtmangiz qabul qilindi ✅', [
@@ -254,26 +340,30 @@ const CheckoutScreen = () => {
             <Text style={styles.sectionTitle}>To'lov turi</Text>
             <View style={styles.paymentCard}>
               <View style={styles.paymentOptions}>
-                {['cash', 'card'].map((method) => (
+                {[
+                  { key: 'cash', label: 'Naqd pul', icon: 'cash' },
+                  { key: 'card', label: 'Karta', icon: 'credit-card' },
+                  { key: 'click', label: 'Click', icon: 'cellphone' },
+                ].map((method) => (
                   <TouchableOpacity
-                    key={method}
+                    key={method.key}
                     style={[
                       styles.paymentOption, 
-                      { backgroundColor: paymentMethod === method ? MAIN_RED : '#F3F4F6' }
+                      { backgroundColor: paymentMethod === method.key ? MAIN_RED : '#F3F4F6' }
                     ]}
-                    onPress={() => setPaymentMethod(method)}
+                    onPress={() => setPaymentMethod(method.key)}
                     activeOpacity={0.8}
                   >
                     <MaterialCommunityIcons 
-                      name={method === 'cash' ? 'cash' : 'credit-card'} 
+                      name={method.icon as any} 
                       size={24} 
-                      color={paymentMethod === method ? '#FFFFFF' : '#9CA3AF'} 
+                      color={paymentMethod === method.key ? '#FFFFFF' : '#9CA3AF'} 
                     />
                     <Text style={[
                       styles.paymentOptionText, 
-                      { color: paymentMethod === method ? '#FFFFFF' : '#9CA3AF' }
+                      { color: paymentMethod === method.key ? '#FFFFFF' : '#9CA3AF' }
                     ]}>
-                      {method === 'cash' ? 'Naqd pul' : 'Karta'}
+                      {method.label}
                     </Text>
                   </TouchableOpacity>
                 ))}

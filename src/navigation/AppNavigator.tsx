@@ -6,6 +6,7 @@ import ComboDetailScreen from '../screens/ComboDetailScreen'
 import CourierOrderDetailScreen from '../screens/CourierOrderDetailScreen'
 import CourierScreen from '../screens/CourierScreen'
 import KitchenScreen from '../screens/KitchenScreen'
+import PaymentSuccessScreen from '../screens/PaymentSuccessScreen'
 import SelectionScreen from '../screens/SelectionScreen'
 import UserOrderDetailScreen from '../screens/UserOrderDetailScreen'
 import TabNavigator from './TabNavigator'
@@ -39,6 +40,14 @@ const UserStack = () => (
       component={UserOrderDetailScreen}
       options={{
         animation: 'slide_from_right'
+      }}
+    />
+    <Stack.Screen 
+      name='PaymentSuccess' 
+      component={PaymentSuccessScreen}
+      options={{
+        headerShown: false,
+        animation: 'slide_from_bottom'
       }}
     />
   </Stack.Navigator>

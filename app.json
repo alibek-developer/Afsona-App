@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "scheme": "afsona",
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
@@ -33,7 +34,10 @@
       "router": {},
       "eas": {
         "projectId": "7c9ce344-3fcf-4364-83f9-50229dea0998"
-      }
+      },
+      "EXPO_PUBLIC_SUPABASE_FUNCTION_CREATE_PAYMENT": "https://umkfdwuxlemnpcoqdaxa.supabase.co/functions/v1/create-payment",
+      "EXPO_PUBLIC_APP_SCHEME": "afsona",
+      "EXPO_PUBLIC_PAYMENT_SUCCESS_PATH": "/payment-success"
     },
     "owner": "alibekqasjh"
   }
