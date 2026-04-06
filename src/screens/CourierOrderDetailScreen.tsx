@@ -16,7 +16,6 @@ import {
 } from 'react-native'
 import MapView, { Marker } from 'react-native-maps'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useCourierTracking } from '../hooks/useCourierTracking'
 import { supabase } from '../lib/supabase'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
@@ -136,86 +135,135 @@ const CourierOrderDetailScreen = () => {
 	const [locationSubscription, setLocationSubscription] = useState<any>(null)
 	const mapRef = useRef<MapView>(null)
 
+	// Updated status checks for new schema
 	const isAccepted =
 		order.status === 'on_the_way' && order.courier_id === currentCourierId
 	const canAccept = order.status === 'ready' && !order.courier_id
-	const isDelivered = order.status === 'yetkazildi'
+	const isDelivered = order.status === 'delivered'
 
-	// Live Location Tracking Hook (only if accepted)
-	const { location } = useCourierTracking(order.id, isAccepted)
-
+	// Delivery destination coords (customer location)
 	const deliveryCoords =
 		order.latitude && order.longitude
 			? { latitude: order.latitude, longitude: order.longitude }
 			: null
 
-	const courierCoords = location?.coords
-		? {
-				latitude: location.coords.latitude,
-				longitude: location.coords.longitude,
-			}
-		: null
+	// Courier's current position (from courier_locations table or order.courier_latitude)
+	const [courierCoords, setCourierCoords] = useState<{ latitude: number; longitude: number } | null>(null)
 
-	// Function to save courier location to Supabase
+	// Subscribe to courier location updates
+	useEffect(() => {
+		if (!isAccepted || !currentCourierId) return
+
+		const channel = supabase
+			.channel(`courier-loc-${currentCourierId}`)
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'courier_locations',
+					filter: `courier_id=eq.${currentCourierId}`,
+				},
+				(payload) => {
+					const loc = payload.new as any
+					if (loc && loc.latitude && loc.longitude) {
+						setCourierCoords({ latitude: loc.latitude, longitude: loc.longitude })
+					}
+				},
+			)
+			.subscribe()
+
+		return () => {
+			supabase.removeChannel(channel)
+		}
+	}, [isAccepted, currentCourierId])
+
+	// Function to save courier location to courier_locations table
 	const saveCourierLocation = async (lat: number, lng: number) => {
 		try {
-			const { error } = await supabase
-				.from('orders')
-				.update({
-					courier_latitude: lat,
-					courier_longitude: lng,
-				})
-				.eq('id', order.id);
-
-			if (error) {
-				console.error('Error saving courier location:', error);
-			}
+			setCourierCoords({ latitude: lat, longitude: lng })
+			await supabase.from('courier_locations').insert({
+				courier_id: currentCourierId,
+				order_id: order.id,
+				latitude: lat,
+				longitude: lng,
+			})
 		} catch (err) {
-			console.error('Error saving courier location:', err);
+			console.error('Error saving courier location:', err)
 		}
-	};
+	}
 
 	// Effect to handle location tracking based on order status
 	useEffect(() => {
-		const startLocationTracking = async () => {
-			if (order.status === 'on_the_way' && order.courier_id === currentCourierId) {
-				// Request location permissions
-				let { status } = await Location.requestForegroundPermissionsAsync();
-				if (status !== 'granted') {
-					Alert.alert('Xatolik', 'Joylashuv ruxsatnomasi berilmadi');
-					return;
-				}
-
-				// Start watching position
-				const subscription = await Location.watchPositionAsync(
-					{
-						accuracy: Location.Accuracy.High,
-						timeInterval: 5000, // Update every 5 seconds
-						distanceInterval: 10, // Update every 10 meters
-					},
-					(position) => {
-						saveCourierLocation(position.coords.latitude, position.coords.longitude);
-					}
-				);
-
-				setLocationSubscription(subscription);
-			} else if (locationSubscription) {
-				// Stop tracking if status is not 'on_the_way' or courier not assigned
-				locationSubscription.remove();
-				setLocationSubscription(null);
-			}
-		};
-
-		startLocationTracking();
-
-		// Cleanup function
-		return () => {
+		if (!isAccepted) {
 			if (locationSubscription) {
-				locationSubscription.remove();
-				setLocationSubscription(null);
+				locationSubscription.remove()
+				setLocationSubscription(null)
 			}
-		};
-	}, [order.status, order.courier_id, currentCourierId]);
+			return
+		}
+
+		let sub: any = null
+
+		const startTracking = async () => {
+			let { status } = await Location.requestForegroundPermissionsAsync()
+			if (status !== 'granted') {
+				Alert.alert('Xatolik', 'Joylashuv ruxsatnomasi berilmadi')
+				return
+			}
+
+			sub = await Location.watchPositionAsync(
+				{
+					accuracy: Location.Accuracy.High,
+					timeInterval: 5000,
+					distanceInterval: 10,
+				},
+				position => {
+					saveCourierLocation(
+						position.coords.latitude,
+						position.coords.longitude,
+					)
+				},
+			)
+			setLocationSubscription(sub)
+		}
+
+		startTracking()
+
+		return () => {
+			if (sub) {
+				sub.remove()
+				setLocationSubscription(null)
+			}
+		}
+	}, [isAccepted, currentCourierId, order.id])
+
+	// Realtime subscription for order status updates
+	useEffect(() => {
+		if (!order?.id) return
+
+		const channel = supabase
+			.channel(`courier-order-detail-${order.id}`)
+			.on(
+				'postgres_changes',
+				{
+					event: 'UPDATE',
+					schema: 'public',
+					table: 'orders',
+					filter: `id=eq.${order.id}`,
+				},
+				payload => {
+					const updated = payload.new as any
+					console.log('[CourierOrderDetail] Realtime order update:', updated)
+					setOrder((prev: any) => ({ ...prev, ...updated }))
+				},
+			)
+			.subscribe()
+
+		return () => {
+			supabase.removeChannel(channel)
+		}
+	}, [order.id])
 
 	// Auto-fit map when both markers exist
 	useEffect(() => {
@@ -235,110 +283,152 @@ const CourierOrderDetailScreen = () => {
 				animated: true,
 			})
 		}
-	}, [location?.coords?.latitude, location?.coords?.longitude])
+	}, [courierCoords?.latitude, courierCoords?.longitude])
 
 	const handleAccept = async () => {
 		setIsUpdating(true)
-		
-		// Get current location to save as initial courier position
-		let location = null;
-		try {
-			await Location.requestForegroundPermissionsAsync();
-			location = await Location.getCurrentPositionAsync({});
-		} catch (err) {
-			console.error('Error getting current location:', err);
-		}
 
-		const updateData: any = {
-			status: 'on_the_way',
+		console.log('[CourierOrderDetail] Accepting order:', order.id)
+		console.log('[CourierOrderDetail] currentCourierId:', currentCourierId)
+
+		const optimisticOrder = {
+			...order,
+			status: 'on_the_way' as const,
 			courier_id: currentCourierId,
-			picked_at: new Date().toISOString(),
-		};
-
-		// Add courier location if available
-		if (location) {
-			updateData.courier_latitude = location.coords.latitude;
-			updateData.courier_longitude = location.coords.longitude;
 		}
+		setOrder(optimisticOrder)
 
-		const { error } = await supabase
-			.from('orders')
-			.update(updateData)
-			.eq('id', order.id)
+		try {
+			let courierLat: number | null = null
+			let courierLng: number | null = null
+			try {
+				await Location.requestForegroundPermissionsAsync()
+				const location = await Location.getCurrentPositionAsync({})
+				courierLat = location.coords.latitude
+				courierLng = location.coords.longitude
+			} catch (err) {
+				console.error('Error getting current location:', err)
+			}
 
-		if (error) {
-			Alert.alert('Xatolik', 'Qabul qilishda xato')
-		} else {
-			setOrder({ ...order, status: 'on_the_way', courier_id: currentCourierId })
+			const { error } = await supabase
+				.from('orders')
+				.update({
+					status: 'on_the_way',
+					courier_id: currentCourierId,
+				})
+				.eq('id', order.id)
+				.eq('status', 'ready')
+
+			if (error) throw error
+
+			await supabase.from('courier_assignments').insert({
+				order_id: order.id,
+				courier_id: currentCourierId,
+				status: 'accepted',
+				accepted_at: new Date().toISOString(),
+			})
+
+			if (courierLat && courierLng) {
+				try {
+					await supabase.from('courier_locations').insert({
+						courier_id: currentCourierId,
+						order_id: order.id,
+						latitude: courierLat,
+						longitude: courierLng,
+					})
+				} catch (locErr) {
+					console.error('Error saving courier location:', locErr)
+				}
+			}
+		} catch (err: any) {
+			setOrder(order)
+			console.error('[CourierOrderDetail] Accept order error:', err)
+			const message =
+				err?.message || err?.details || 'Marshrutga qo\'shishda xatolik yuz berdi'
+			Alert.alert('Xatolik', message)
+		} finally {
+			setIsUpdating(false)
 		}
-		setIsUpdating(false)
 	}
 
 	const handleDelivered = async () => {
 		setIsUpdating(true)
-		const { error } = await supabase
-			.from('orders')
-			.update({
-				status: 'yetkazildi',
-				delivered_at: new Date().toISOString(),
-			})
-			.eq('id', order.id)
 
-		if (error) {
-			Alert.alert('Xatolik', 'Xatolik yuz berdi')
-		} else {
-			setOrder({ ...order, status: 'yetkazildi' })
+		console.log('[CourierOrderDetail] Marking order as delivered:', order.id)
+		console.log('[CourierOrderDetail] currentCourierId:', currentCourierId)
+
+		const optimisticOrder = { ...order, status: 'delivered' as const }
+		setOrder(optimisticOrder)
+
+		try {
+			const { error } = await supabase
+				.from('orders')
+				.update({
+					status: 'delivered',
+					delivered_at: new Date().toISOString(),
+				})
+				.eq('id', order.id)
+				.eq('courier_id', currentCourierId)
+
+			if (error) throw error
+		} catch (err: any) {
+			setOrder(order)
+			console.error('[CourierOrderDetail] Delivered error:', err)
+			const message =
+				err?.message || err?.details || 'Yetkazildi belgilashda xato'
+			Alert.alert('Xatolik', message)
+		} finally {
+			setIsUpdating(false)
 		}
-		setIsUpdating(false)
 	}
 
 	const handleCall = () => {
-		if (order.customer_phone) {
-			Linking.openURL(`tel:${order.customer_phone}`)
+		if (order.phone) {
+			Linking.openURL(`tel:${order.phone}`)
 		}
 	}
 
 	const handleOpenInGoogleMaps = () => {
-	if (!deliveryCoords) {
-		Alert.alert('Xatolik', 'Mijoz joylashuvi topilmadi')
-		return
+		if (!deliveryCoords) {
+			Alert.alert('Xatolik', 'Mijoz joylashuvi topilmadi')
+			return
+		}
+
+		const { latitude, longitude } = deliveryCoords
+
+		// Android uchun Google Maps navigation
+		const url = `google.navigation:q=${latitude},${longitude}`
+
+		Linking.canOpenURL(url)
+			.then(supported => {
+				if (supported) {
+					return Linking.openURL(url)
+				} else {
+					// Fallback browser Google Maps
+					const browserUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
+					return Linking.openURL(browserUrl)
+				}
+			})
+			.catch(() => {
+				Alert.alert('Xatolik', 'Google Maps ochilmadi')
+			})
 	}
 
-	const { latitude, longitude } = deliveryCoords
+	const handleCallCustomer = async () => {
+		if (!order?.phone) {
+			Alert.alert('Xatolik', 'Telefon raqam topilmadi')
+			return
+		}
+		console.log(order.phone)
+		const cleanedPhone = order.phone.replace(/\s+/g, '')
+		const phoneUrl = `tel:${cleanedPhone}`
 
-	// Android uchun Google Maps navigation
-	const url = `google.navigation:q=${latitude},${longitude}`
-
-	Linking.canOpenURL(url)
-		.then((supported) => {
-			if (supported) {
-				return Linking.openURL(url)
-			} else {
-				// Fallback browser Google Maps
-				const browserUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`
-				return Linking.openURL(browserUrl)
-			}
-		})
-		.catch(() => {
-			Alert.alert('Xatolik', 'Google Maps ochilmadi')
-		})
-}
-
-const handleCallCustomer = async () => {
-  if (!order?.phone) {
-    Alert.alert('Xatolik', 'Telefon raqam topilmadi')
-    return
-  }
-console.log(order.phone)
-  const cleanedPhone = order.phone.replace(/\s+/g, '')
-  const phoneUrl = `tel:${cleanedPhone}`
-
-  try {
-    await Linking.openURL(phoneUrl)
-  } catch (error) {
-    Alert.alert('Xatolik', 'Telefon ilovasi ochilmadi')
-  }
-}
+		try {
+			await Linking.openURL(phoneUrl)
+		} catch (error) {
+			Alert.alert('Xatolik', 'Telefon ilovasi ochilmadi')
+		}
+	}
 
 	return (
 		<View style={styles.container}>
@@ -385,7 +475,7 @@ console.log(order.phone)
 				{deliveryCoords && (
 					<TouchableOpacity
 						style={[styles.floatingNavigate, { top: insets.top + 10 }]}
-						onPress={() => handleOpenInGoogleMaps(deliveryCoords)}
+						onPress={handleOpenInGoogleMaps}
 					>
 						<MaterialCommunityIcons name='navigation' size={22} color='#FFF' />
 					</TouchableOpacity>
@@ -394,8 +484,7 @@ console.log(order.phone)
 				{order?.phone && (
 					<TouchableOpacity
 						style={[styles.floatingCall, { top: insets.top + 70 }]}
-						onPress={() => handleCallCustomer(order.phone || '')}
-						
+						onPress={handleCallCustomer}
 					>
 						<MaterialCommunityIcons name='phone' size={22} color='#FFF' />
 					</TouchableOpacity>
@@ -430,9 +519,9 @@ console.log(order.phone)
 					<View style={styles.cardHeader}>
 						<View style={{ flex: 1 }}>
 							<Text style={styles.customerName}>{order.customer_name}</Text>
-							<Text style={styles.customerPhone}>{order.customer_phone}</Text>
+							<Text style={styles.customerPhone}>{order.phone}</Text>
 						</View>
-						{order.customer_phone && (
+						{order.phone && (
 							<TouchableOpacity style={styles.callBtn} onPress={handleCall}>
 								<MaterialCommunityIcons name='phone' size={20} color='#FFF' />
 							</TouchableOpacity>
@@ -447,30 +536,35 @@ console.log(order.phone)
 							color='#FF0000'
 						/>
 						<Text style={styles.addressText} numberOfLines={2}>
-							{order.type === 'delivery'
+							{order.order_type === 'delivery'
 								? order.delivery_address
 								: `Stol: ${order.table_number}`}
 						</Text>
 					</View>
 
 					{/* ── ORDER ITEMS ── */}
-					{order.items && order.items.length > 0 && (
+					{(order.order_items || order.items || []).length > 0 && (
 						<View style={styles.itemsCard}>
 							<Text style={styles.itemsTitle}>Buyurtma tarkibi:</Text>
-							{order.items.map((item: any, idx: number) => (
-								<View key={idx} style={styles.itemRow}>
-									<Text style={styles.itemName} numberOfLines={1}>
-										{item.name}
-									</Text>
-									<Text style={styles.itemMeta}>
-										x{item.quantity}
-										{'  '}
-										<Text style={styles.itemPrice}>
-											{(item.price * item.quantity).toLocaleString()} so'm
+							{(order.order_items || order.items || []).map(
+								(item: any, idx: number) => (
+									<View key={idx} style={styles.itemRow}>
+										<Text style={styles.itemName} numberOfLines={1}>
+											{item.name || `Mahsulot #${idx + 1}`}
 										</Text>
-									</Text>
-								</View>
-							))}
+										<Text style={styles.itemMeta}>
+											x{item.quantity}
+											{'  '}
+											<Text style={styles.itemPrice}>
+												{(
+													(item.unit_price || item.price) * item.quantity
+												).toLocaleString()}{' '}
+												so'm
+											</Text>
+										</Text>
+									</View>
+								),
+							)}
 							<View style={styles.itemsDivider} />
 							<View style={styles.itemsTotalRow}>
 								<Text style={styles.itemsTotalLabel}>Jami</Text>
@@ -502,11 +596,11 @@ console.log(order.phone)
 								activeOpacity={0.85}
 							>
 								<MaterialCommunityIcons
-									name='check-circle'
+									name='map-marker-plus'
 									size={20}
 									color='#FFF'
 								/>
-								<Text style={styles.actionBtnText}>Qabul qilish</Text>
+								<Text style={styles.actionBtnText}>Marshrutga qo'shish</Text>
 							</TouchableOpacity>
 						)}
 
@@ -713,33 +807,33 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 	},
 	floatingNavigate: {
-	position: 'absolute',
-	right: 16,
-	width: 48,
-	height: 48,
-	borderRadius: 24,
-	backgroundColor: '#FF0000',
-	alignItems: 'center',
-	justifyContent: 'center',
-	shadowColor: '#FF0000',
-	shadowOpacity: 0.4,
-	shadowRadius: 8,
-	elevation: 8,
-},
-floatingCall: {
-	position: 'absolute',
-	right: 16,
-	width: 48,
-	height: 48,
-	borderRadius: 24,
-	backgroundColor: '#2ECC71',
-	alignItems: 'center',
-	justifyContent: 'center',
-	shadowColor: '#2ECC71',
-	shadowOpacity: 0.4,
-	shadowRadius: 8,
-	elevation: 8,
-},
+		position: 'absolute',
+		right: 16,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
+		backgroundColor: '#FF0000',
+		alignItems: 'center',
+		justifyContent: 'center',
+		shadowColor: '#FF0000',
+		shadowOpacity: 0.4,
+		shadowRadius: 8,
+		elevation: 8,
+	},
+	floatingCall: {
+		position: 'absolute',
+		right: 16,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
+		backgroundColor: '#2ECC71',
+		alignItems: 'center',
+		justifyContent: 'center',
+		shadowColor: '#2ECC71',
+		shadowOpacity: 0.4,
+		shadowRadius: 8,
+		elevation: 8,
+	},
 	deliveredText: { color: '#10B981', fontWeight: '700', fontSize: 15 },
 })
 

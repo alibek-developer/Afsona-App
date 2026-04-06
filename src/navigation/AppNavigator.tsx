@@ -4,12 +4,12 @@ import BookingScreen from '../screens/BookingScreen'
 import CheckoutScreen from '../screens/CheckoutScreen'
 import ComboDetailScreen from '../screens/ComboDetailScreen'
 import CourierOrderDetailScreen from '../screens/CourierOrderDetailScreen'
-import CourierScreen from '../screens/CourierScreen'
 import KitchenScreen from '../screens/KitchenScreen'
 import PaymentSuccessScreen from '../screens/PaymentSuccessScreen'
 import SelectionScreen from '../screens/SelectionScreen'
 import UserOrderDetailScreen from '../screens/UserOrderDetailScreen'
 import TabNavigator from './TabNavigator'
+import CourierTabNavigator from './CourierTabNavigator'
 
 const Stack = createNativeStackNavigator()
 
@@ -60,10 +60,10 @@ const KitchenStack = () => (
   </Stack.Navigator>
 )
 
-// Courier Stack Navigator (for couriers)
+// Courier Stack Navigator (for couriers) — wraps bottom tabs + order detail
 const CourierStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name='CourierMain' component={CourierScreen} />
+    <Stack.Screen name='CourierTabs' component={CourierTabNavigator} />
     <Stack.Screen 
       name='CourierOrderDetail' 
       component={CourierOrderDetailScreen}
@@ -77,23 +77,18 @@ const CourierStack = () => (
 const AppNavigator = () => {
   const { user, role, loading } = useAuth()
 
-  // Show loading state while checking auth
   if (loading) {
-    return null // Or return a loading screen component
+    return null
   }
 
-  // Conditional rendering based on user role
-  // If user is kitchen staff, show KitchenStack
   if (user && role === 'kitchen') {
     return <KitchenStack />
   }
 
-  // If user is courier, show CourierStack
   if (user && role === 'courier') {
     return <CourierStack />
   }
 
-  // Default: show UserStack (for regular users or non-authenticated users)
   return <UserStack />
 }
 

@@ -1,3 +1,4 @@
+import { MenuItemWithCategory } from '../hooks/useRealtimeOrders'
 import { MOCK_CATEGORIES, MOCK_MENU_ITEMS } from '../lib/mocks'
 import { supabase } from '../lib/supabase'
 
@@ -7,16 +8,8 @@ export interface Category {
 	created_at: string
 }
 
-export interface MenuItem {
-	id: string
-	name: string
-	price: number
-	category: string
-	image_url: string
-	available_on_mobile: boolean
-	is_available: boolean // Bazadagi is_available ustuni
-	created_at: string
-}
+// Re-export the MenuItemWithCategory type
+export type MenuItem = MenuItemWithCategory
 
 /**
  * Barcha kategoriyalarni olish
@@ -29,10 +22,10 @@ export const fetchCategories = async (): Promise<Category[]> => {
 			.order('name', { ascending: true })
 
 		if (error) throw error
-		
+
 		if (!data || data.length === 0) {
-			console.warn('⚠️ No categories found in database, using mock data');
-			return MOCK_CATEGORIES;
+			console.warn('⚠️ No categories found in database, using mock data')
+			return MOCK_CATEGORIES
 		}
 
 		return data
@@ -43,41 +36,64 @@ export const fetchCategories = async (): Promise<Category[]> => {
 }
 
 /**
- * Taomlarni filtrlab olish (Arxivlanmagan va Mobilda ruxsat berilganlar)
+ * Fetch menu items with category information
  */
-export const fetchMenuItemsByCategory = async (
-	categoryName?: string,
-): Promise<MenuItem[]> => {
+export const fetchMenuItemsWithCategories = async (
+	categoryId?: string,
+): Promise<MenuItemWithCategory[]> => {
 	try {
 		let query = supabase
 			.from('menu_items')
-			.select('*')
+			.select(
+				`
+				*,
+				categories!menu_items_category_id_fkey(id, name)
+			`,
+			)
 			.eq('available_on_mobile', true)
-			.eq('is_available', true) // Faqat sotuvda bor (arxivlanmagan) taomlar
+			.eq('is_available', true)
 
-		if (categoryName && categoryName !== 'all') {
-			query = query.ilike('category', categoryName)
+		if (categoryId && categoryId !== 'all') {
+			query = query.eq('category_id', categoryId)
 		}
 
 		const { data, error } = await query
 		if (error) throw error
-		
+
 		if (!data || data.length === 0) {
-			console.warn(`⚠️ No items found for category: ${categoryName}, using mock data`);
-			return MOCK_MENU_ITEMS.filter(item => 
-				!categoryName || categoryName === 'all' || item.category.toLowerCase() === categoryName.toLowerCase()
-			);
+			console.warn(`⚠️ No items found, using mock data`)
+			const mockItems = MOCK_MENU_ITEMS
+			if (categoryId && categoryId !== 'all') {
+				return mockItems.filter(item => item.category_id === categoryId)
+			}
+			return mockItems
 		}
 
-		return data
+		// Transform data to include category_name from the join
+		return data.map(item => ({
+			...item,
+			category_name: (item.categories as any)?.name || item.category_id,
+		}))
 	} catch (error) {
 		console.error('❌ Error fetching menu items, using fallback:', error)
-		return MOCK_MENU_ITEMS.filter(item => 
-			!categoryName || categoryName === 'all' || item.category.toLowerCase() === categoryName.toLowerCase()
-		);
+		return MOCK_MENU_ITEMS
 	}
 }
 
+/**
+ * Taomlarni filtrlab olish (Arxivlanmagan va Mobilda ruxsat berilganlar)
+ * @deprecated Use fetchMenuItemsWithCategories instead
+ */
+export const fetchMenuItemsByCategory = async (
+	categoryName?: string,
+): Promise<MenuItem[]> => {
+	// For backward compatibility, return all items if no category filter
+	// The new system uses category_id not category name
+	return fetchMenuItemsWithCategories(
+		categoryName === 'all' ? undefined : categoryName,
+	)
+}
+
 export const fetchAllMenuItems = async (): Promise<MenuItem[]> => {
-	return fetchMenuItemsByCategory('all')
+	return fetchMenuItemsWithCategories()
 }

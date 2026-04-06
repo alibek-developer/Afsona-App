@@ -24,14 +24,15 @@ export interface Order {
 	id: string
 	created_at: string
 	customer_name: string
-	phone: string // customer_phone emas, phone deb o'zgartirildi
+	phone: string
 	delivery_address: string | null
 	latitude: number | null
 	longitude: number | null
-	type: 'delivery' | 'dine-in' // mode emas, bazadagi type ishlatiladi
-	status: 'yangi' | 'tayyorlanmoqda' | 'tayyor' | 'yakunlandi'
-	items: CartItem[] // jsonb formatida saqlanadi
-	total_amount: number // total emas, total_amount
-	table_number?: string // optional for dine-in
-	payment_method?: string // optional field
+	order_type: 'delivery' | 'dine-in'
+	status: 'new' | 'accepted' | 'preparing' | 'ready' | 'on_the_way' | 'delivered' | 'cancelled'
+	total_amount: number
+	payment_method?: string
 }
+
+// Order items are stored in separate order_items table, not in Order interface
+// Use order.order_items to access items

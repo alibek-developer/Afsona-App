@@ -25,7 +25,7 @@ const { width } = Dimensions.get('window');
 
 const ImprovedCourierScreen = () => {
   const { user, logout, authLoading } = useAuth();
-  const { orders, loading, error, fetchOrders, currentCourierId } = useOrders();
+  const { orders, initialLoading, error, fetchOrders, currentCourierId } = useOrders();
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   // Subscribe to real-time updates
@@ -82,7 +82,7 @@ const ImprovedCourierScreen = () => {
 
   // ==================== RENDER ORDERS LIST ====================
   const renderOrdersList = () => {
-    if (loading) {
+    if (initialLoading) {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#E53935" />

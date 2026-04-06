@@ -3,19 +3,14 @@ import Toast from 'react-native-toast-message';
 import { Order, OrderStatus } from './useRealtimeOrders';
 
 // Status change messages
-const statusMessages: Record<OrderStatus | 'bekor_qilindi', { title: string; body: string; type: 'success' | 'error' | 'info' }> = {
-  yangi: { title: 'Buyurtma yaratildi', body: 'Yangi buyurtma tushdi', type: 'success' },
-  qabul_qilindi: { title: 'Oshxona qabul qildi', body: 'Oshxona buyurtmangizni qabul qildi', type: 'info' },
-  tayyorlanmoqda: { title: 'Tayyorlanmoqda', body: 'Taom tayyorlanmoqda', type: 'info' },
-  tayyor: { title: 'Buyurtma tayyor', body: 'Buyurtmangiz yetkazish uchun tayyor', type: 'info' },
-  new: { title: 'Buyurtma yaratildi', body: 'Yangi buyurtma tushdi', type: 'success' },
+const statusMessages: Record<OrderStatus, { title: string; body: string; type: 'success' | 'error' | 'info' }> = {
+  new: { title: 'Buyurtma yaratildi', body: 'Yangi buyurtma qabul qilindi', type: 'success' },
+  accepted: { title: 'Qabul qilindi', body: 'Oshxona buyurtmangizni qabul qildi', type: 'info' },
+  preparing: { title: 'Tayyorlanmoqda', body: 'Taom tayyorlanmoqda', type: 'info' },
   ready: { title: 'Buyurtma tayyor', body: 'Buyurtmangiz yetkazish uchun tayyor', type: 'info' },
-  accepted: { title: 'Kuryer topildi', body: 'Kuryer buyurtmangizni qabul qildi', type: 'success' },
-  on_the_way: { title: 'Kuryer yo\'lda', body: 'Kuryer buyurtmangizni olib ketdi', type: 'info' },
-  olingan: { title: 'Buyurtma qabul qilindi', body: 'Siz buyurtmani qabul qildingiz', type: 'success' },
-  olib_ketildi: { title: 'Kuryer yo\'lda', body: 'Kuryer buyurtmangizni olib ketdi', type: 'info' },
-  yetkazildi: { title: 'Yetkazildi', body: 'Buyurtmangiz yetkazildi. Yoqimli ishtaha!', type: 'success' },
-  bekor_qilindi: { title: 'Bekor qilindi', body: 'Buyurtmangiz bekor qilindi', type: 'error' },
+  on_the_way: { title: "Kuryer yo'lda", body: "Kuryer buyurtmangizni olib ketdi", type: 'info' },
+  delivered: { title: 'Yetkazildi', body: 'Buyurtmangiz yetkazildi. Yoqimli ishtaha!', type: 'success' },
+  cancelled: { title: 'Bekor qilindi', body: 'Buyurtmangiz bekor qilindi', type: 'error' },
 }
 
 export const useOrderNotifications = () => {

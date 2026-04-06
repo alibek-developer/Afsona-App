@@ -125,19 +125,26 @@ const STATUS_CONFIG: Record<
 	string,
 	{ label: string; color: string; bg: string; icon: string; liveText: string }
 > = {
-	oshxonada: {
-		label: 'Oshxonada',
+	new: {
+		label: 'Yangi',
+		color: '#D97706',
+		bg: '#FEF3C7',
+		icon: 'clock-outline',
+		liveText: 'Buyurtma qabul qilindi...',
+	},
+	accepted: {
+		label: 'Qabul qilindi',
+		color: '#3B82F6',
+		bg: '#EFF6FF',
+		icon: 'check-circle-outline',
+		liveText: 'Buyurtma tasdiqlandi',
+	},
+	preparing: {
+		label: 'Tayyorlanmoqda',
 		color: '#D97706',
 		bg: '#FEF3C7',
 		icon: 'chef-hat',
 		liveText: 'Oshxonada tayyorlanmoqda...',
-	},
-	tayyor: {
-		label: 'Tayyor',
-		color: '#7C3AED',
-		bg: '#EDE9FE',
-		icon: 'package-variant',
-		liveText: 'Buyurtma tayyor, kuryer kutilmoqda',
 	},
 	ready: {
 		label: 'Tayyor',
@@ -153,20 +160,28 @@ const STATUS_CONFIG: Record<
 		icon: 'motorbike',
 		liveText: "Kuryer yo'lda",
 	},
-	olingan: {
-		label: "Yo'lda",
-		color: '#FF0000',
-		bg: '#FFE4E4',
-		icon: 'motorbike',
-		liveText: "Kuryer yo'lda",
-	},
-	yetkazildi: {
+	delivered: {
 		label: 'Yetkazildi',
 		color: '#059669',
 		bg: '#D1FAE5',
 		icon: 'check-all',
 		liveText: 'Buyurtma yetkazildi ✓',
 	},
+	cancelled: {
+		label: 'Bekor qilindi',
+		color: '#EF4444',
+		bg: '#FEE2E2',
+		icon: 'close-circle-outline',
+		liveText: 'Buyurtma bekor qilindi',
+	},
+}
+
+const DEFAULT_STATUS_CFG = {
+	label: 'Yangi',
+	color: '#FF0000',
+	bg: '#FFF5F5',
+	icon: 'clock-outline',
+	liveText: 'Buyurtma qabul qilindi',
 }
 
 // Coords type used for courier location state
@@ -188,21 +203,28 @@ const UserOrderDetailScreen = () => {
 	const insets = useSafeAreaInsets()
 	const mapRef = useRef<MapView>(null)
 
-	const statusCfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG['oshxonada']
+	const statusKey = ((order as any)?.status || 'new').toString().toLowerCase()
+	const statusCfg = STATUS_CONFIG[statusKey] ?? DEFAULT_STATUS_CFG
+
+	const safeItems = Array.isArray(order.order_items)
+		? order.order_items
+		: Array.isArray(order.items)
+			? order.items
+			: []
 
 	// Timeline steps
 	const steps = [
-		{ id: 'oshxonada', label: 'Oshxona', icon: 'chef-hat' },
-		{ id: 'tayyor', label: 'Tayyor', icon: 'package-variant' },
+		{ id: 'new', label: 'Yangi', icon: 'clock-outline' },
+		{ id: 'preparing', label: 'Tayyorlanmoqda', icon: 'chef-hat' },
 		{ id: 'on_the_way', label: "Yo'lda", icon: 'motorbike' },
-		{ id: 'yetkazildi', label: 'Yetkazildi', icon: 'check-all' },
+		{ id: 'delivered', label: 'Yetkazildi', icon: 'check-all' },
 	]
 
 	const currentStepIndex = (() => {
 		const s = order.status
-		if (s === 'yetkazildi') return 3
-		if (s === 'ready' || s === 'olingan') return 2
-		if (s === 'tayyor' || s === 'on_the_way') return 1
+		if (s === 'delivered') return 3
+		if (s === 'on_the_way') return 2
+		if (s === 'preparing' || s === 'ready') return 1
 		return 0
 	})()
 
@@ -220,7 +242,24 @@ const UserOrderDetailScreen = () => {
 				},
 				payload => {
 					const updated = payload.new as any
-					setOrder(updated as Order)
+					setOrder(prev => {
+						const nextItems = Array.isArray(updated?.items)
+							? updated.items
+							: Array.isArray((prev as any)?.items)
+								? (prev as any).items
+								: []
+						const nextOrderItems = Array.isArray(updated?.order_items)
+							? updated.order_items
+							: Array.isArray((prev as any)?.order_items)
+								? (prev as any).order_items
+								: []
+						return {
+							...prev,
+							...updated,
+							items: nextItems,
+							order_items: nextOrderItems,
+						} as Order
+					})
 					// If the order row carries courier coords (e.g. courier_latitude / courier_longitude columns)
 					if (updated.courier_latitude && updated.courier_longitude) {
 						setCourierLocation({
@@ -306,7 +345,7 @@ const UserOrderDetailScreen = () => {
 		<View style={styles.container}>
 			{/* ── MAP 60% ── */}
 			<View style={styles.mapWrapper}>
-				{order.type === 'delivery' && deliveryCoords ? (
+				{order.order_type === 'delivery' && deliveryCoords ? (
 					<MapView
 						ref={mapRef}
 						style={styles.map}
@@ -327,7 +366,7 @@ const UserOrderDetailScreen = () => {
 							</Marker>
 						)}
 					</MapView>
-				) : order.type === 'dine-in' ? (
+				) : order.order_type === 'dine-in' ? (
 					<View style={styles.dineInFull}>
 						<MaterialCommunityIcons
 							name='silverware-fork-knife'
@@ -431,35 +470,42 @@ const UserOrderDetailScreen = () => {
 					</View>
 
 					{/* Address */}
-					{order.type === 'delivery' && (order as any).delivery_address && (
-						<View style={styles.infoCard}>
-							<MaterialCommunityIcons
-								name='map-marker-outline'
-								size={20}
-								color='#6B7280'
-							/>
-							<Text style={styles.infoText}>
-								{(order as any).delivery_address}
-							</Text>
-						</View>
-					)}
+					{order.order_type === 'delivery' &&
+						(order as any).delivery_address && (
+							<View style={styles.infoCard}>
+								<MaterialCommunityIcons
+									name='map-marker-outline'
+									size={20}
+									color='#6B7280'
+								/>
+								<Text style={styles.infoText}>
+									{(order as any).delivery_address}
+								</Text>
+							</View>
+						)}
 
 					{/* Order Items */}
 					<View style={styles.itemsCard}>
 						<Text style={styles.sectionTitle}>Buyurtma tarkibi</Text>
-						{order.items.map((item: any, idx: number) => (
+						{safeItems.map((item: any, idx: number) => (
 							<View key={idx} style={styles.itemRow}>
-								<Text style={styles.itemQty}>{item.quantity}×</Text>
-								<Text style={styles.itemName}>{item.name}</Text>
+								<Text style={styles.itemQty}>{item.quantity || 1}×</Text>
+								<Text style={styles.itemName}>
+									{item.name || `Mahsulot #${idx + 1}`}
+								</Text>
 								<Text style={styles.itemPrice}>
-									{(item.price * item.quantity).toLocaleString()} so'm
+									{(
+										(item.unit_price || item.price || 0) *
+											(item.quantity || 1) || 0
+									).toLocaleString()}{' '}
+									so'm
 								</Text>
 							</View>
 						))}
 						<View style={styles.totalRow}>
 							<Text style={styles.totalLabel}>Jami</Text>
 							<Text style={styles.totalValue}>
-								{order.total_amount.toLocaleString()} so'm
+								{(order.total_amount || 0).toLocaleString()} so'm
 							</Text>
 						</View>
 					</View>

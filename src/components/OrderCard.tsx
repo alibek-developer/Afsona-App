@@ -30,30 +30,40 @@ const OrderCard = ({ order, currentCourierId }: OrderCardProps) => {
 
   // Calculate status and button visibility
   const getStatusInfo = () => {
-    if (order.status === 'ready') {
+    if (order.status === 'new') {
+      return {
+        text: 'Yangi',
+        color: '#FF0000',
+      };
+    } else if (order.status === 'accepted') {
+      return {
+        text: 'Qabul qilindi',
+        color: '#3B82F6',
+      };
+    } else if (order.status === 'preparing') {
+      return {
+        text: 'Tayyorlanmoqda',
+        color: '#F59E0B',
+      };
+    } else if (order.status === 'ready') {
       return {
         text: 'Tayyor',
         color: '#10B981',
       };
     } else if (order.status === 'on_the_way') {
       return {
-        text: 'Yo\'lda',
+        text: "Yo'lda",
         color: '#3B82F6',
       };
-    } else if (order.status === 'yangi') {
-      return {
-        text: 'Yangi',
-        color: '#FF0000',
-      };
-    } else if (order.status === 'tayyorlanmoqda') {
-      return {
-        text: 'Tayyorlanmoqda',
-        color: '#F59E0B',
-      };
-    } else if (order.status === 'yetkazildi') {
+    } else if (order.status === 'delivered') {
       return {
         text: 'Yetkazildi',
         color: '#6B7280',
+      };
+    } else if (order.status === 'cancelled') {
+      return {
+        text: 'Bekor qilindi',
+        color: '#EF4444',
       };
     }
     return {

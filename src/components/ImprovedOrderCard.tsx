@@ -34,15 +34,15 @@ const ImprovedOrderCard = ({ order, currentCourierId }: OrderCardProps) => {
 
   // Calculate status and button visibility
   const getStatusInfo = () => {
-    if (order.status === 'tayyor' || order.status === 'yangi') {
+    if (order.status === 'ready') {
       return {
-        text: 'Mavjud',
+        text: 'Tayyor',
         color: '#10B981',
         buttonVisible: true,
         buttonText: 'Qabul qilish',
         buttonColor: '#E53935'
       };
-    } else if (order.status === 'olingan') {
+    } else if (order.status === 'on_the_way') {
       if (order.courier_id === currentCourierId) {
         return {
           text: 'Sizda',
@@ -60,6 +60,22 @@ const ImprovedOrderCard = ({ order, currentCourierId }: OrderCardProps) => {
           buttonColor: '#9CA3AF'
         };
       }
+    } else if (order.status === 'new') {
+      return {
+        text: 'Yangi',
+        color: '#FF0000',
+        buttonVisible: false,
+        buttonText: 'Kutilmoqda',
+        buttonColor: '#9CA3AF'
+      };
+    } else if (order.status === 'preparing') {
+      return {
+        text: 'Tayyorlanmoqda',
+        color: '#F59E0B',
+        buttonVisible: false,
+        buttonText: 'Kutilmoqda',
+        buttonColor: '#9CA3AF'
+      };
     }
     return {
       text: order.status,
@@ -83,12 +99,11 @@ const ImprovedOrderCard = ({ order, currentCourierId }: OrderCardProps) => {
       const { error } = await supabase
         .from('orders')
         .update({
-          status: 'olingan',
+          status: 'on_the_way',
           courier_id: currentCourierId,
-          picked_at: new Date().toISOString()
         })
         .eq('id', orderId)
-        .eq('status', 'tayyor'); // Race condition protection
+        .eq('status', 'ready');
 
       if (error) {
         console.log('Supabase error:', error);
@@ -100,13 +115,21 @@ const ImprovedOrderCard = ({ order, currentCourierId }: OrderCardProps) => {
         return;
       }
 
+      await supabase
+        .from('courier_assignments')
+        .insert({
+          order_id: orderId,
+          courier_id: currentCourierId,
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+        })
+
       console.log('Order accepted successfully');
       Toast.show({
         type: 'success',
         text1: 'Muvaffaqiyatli',
         text2: 'Buyurtma qabul qilindi'
       });
-      // Order stays visible in UI — no state removal
     } catch (err: any) {
       console.log('Catch error:', err);
       Toast.show({

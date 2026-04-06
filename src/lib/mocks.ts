@@ -1,4 +1,4 @@
-import { Order } from '../hooks/useRealtimeOrders';
+import { OrderWithItems } from '../hooks/useRealtimeOrders';
 import { Category, MenuItem } from '../services/api';
 
 // ===== MOCK CATEGORIES =====
@@ -6,7 +6,7 @@ export const MOCK_CATEGORIES: Category[] = [
   { id: '1', name: 'Xamirli taomlar', created_at: new Date().toISOString() },
   { id: '2', name: 'Suyuq ovqatlar', created_at: new Date().toISOString() },
   { id: '3', name: 'Shashliklar', created_at: new Date().toISOString() },
-  { id: '4', name: 'Milliy go\'shtli taomlar', created_at: new Date().toISOString() },
+  { id: '4', name: "Milliy go'shtli taomlar", created_at: new Date().toISOString() },
 ];
 
 // ===== MOCK MENU ITEMS =====
@@ -15,7 +15,7 @@ export const MOCK_MENU_ITEMS: MenuItem[] = [
     id: 'm1',
     name: "Go'sht patir",
     price: 35000,
-    category: 'Xamirli taomlar',
+    category_id: '1',
     image_url: 'https://images.unsplash.com/photo-1601050638917-3f3095c2d54e',
     available_on_mobile: true,
     is_available: true,
@@ -25,7 +25,7 @@ export const MOCK_MENU_ITEMS: MenuItem[] = [
     id: 'm2',
     name: 'Mastava',
     price: 25000,
-    category: 'Suyuq ovqatlar',
+    category_id: '2',
     image_url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd',
     available_on_mobile: true,
     is_available: true,
@@ -35,7 +35,7 @@ export const MOCK_MENU_ITEMS: MenuItem[] = [
     id: 'm3',
     name: "G'ijduvon shashlik",
     price: 18000,
-    category: 'Shashliklar',
+    category_id: '3',
     image_url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1',
     available_on_mobile: true,
     is_available: true,
@@ -44,19 +44,19 @@ export const MOCK_MENU_ITEMS: MenuItem[] = [
 ];
 
 // ===== MOCK ORDERS =====
-export const MOCK_ORDERS: Order[] = [
+export const MOCK_ORDERS: OrderWithItems[] = [
   {
     id: 'o1',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    status: 'yangi',
-    items: [
-      { id: 'm1', name: "Go'sht patir", quantity: 2, price: 35000 }
+    status: 'new',
+    order_items: [
+      { id: 'oi1', order_id: 'o1', menu_item_id: 'm1', quantity: 2, unit_price: 35000, created_at: new Date().toISOString() }
     ],
     total_amount: 70000,
-    type: 'delivery',
+    order_type: 'delivery',
     customer_name: 'Demo User',
-    customer_phone: '+998 90 123 45 67',
+    phone: '+998 90 123 45 67',
     delivery_address: 'Tashkent, Amir Temur street, 15'
   }
 ];
