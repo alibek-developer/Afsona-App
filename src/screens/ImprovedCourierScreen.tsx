@@ -19,7 +19,6 @@ import Toast from 'react-native-toast-message';
 import OrderCard from '../components/OrderCard';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../hooks/useOrders';
-import { useRealtimeOrdersSubscription } from '../hooks/useRealtimeOrders';
 
 const { width } = Dimensions.get('window');
 
@@ -27,9 +26,6 @@ const ImprovedCourierScreen = () => {
   const { user, logout, authLoading } = useAuth();
   const { orders, initialLoading, error, fetchOrders, currentCourierId } = useOrders();
   const [refreshing, setRefreshing] = useState<boolean>(false);
-
-  // Subscribe to real-time updates
-  useRealtimeOrdersSubscription(fetchOrders);
 
   // ==================== LOGOUT ====================
   const handleLogout = () => {

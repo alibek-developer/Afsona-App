@@ -26,6 +26,7 @@ import {
     fetchCategories,
     fetchMenuItemsByCategory,
     MenuItem,
+    fetchBanners,
 } from '../services/api';
 
 const { width } = Dimensions.get('window')
@@ -42,13 +43,18 @@ const MenuScreen = () => {
   const [foodItems, setFoodItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [banners, setBanners] = useState<any[]>([])
   const [refreshing, setRefreshing] = useState(false)
 
   const loadData = async () => {
     try {
       setCategoriesLoading(true)
-      const categoriesData = await fetchCategories()
+      const [categoriesData, bannersData] = await Promise.all([
+        fetchCategories(),
+        fetchBanners()
+      ])
       setCategories(categoriesData)
+      setBanners(bannersData)
       await fetchMenuItems(
         selectedCategoryName === 'all' ? undefined : selectedCategoryName,
       )
@@ -170,23 +176,23 @@ const MenuScreen = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalScroll}
           >
-            {(COMBO_SETS || []).map(combo => (
+            {(banners || []).map(item => (
               <TouchableOpacity
-                key={combo.id}
-                onPress={() => navigation.navigate('ComboDetail', { combo })}
+                key={item.id}
+                onPress={() => navigation.navigate('ComboDetail', { bannerId: item.id })}
                 activeOpacity={0.9}
                 style={styles.comboCard}
               >
                 <ImageBackground
-                  source={{ uri: combo.image }}
+                  source={{ uri: item.image_url }}
                   style={styles.comboImage}
                   imageStyle={{ borderRadius: 25 }}
                 >
                   <View style={styles.comboOverlay}>
-                    <Text style={styles.comboName}>{combo.name}</Text>
+                    <Text style={styles.comboName}>{item.title}</Text>
                     <View style={styles.priceTag}>
                       <Text style={styles.comboPrice}>
-                        {combo.price?.toLocaleString() || 0} UZS
+                        {item.cta_button_text}
                       </Text>
                     </View>
                   </View>

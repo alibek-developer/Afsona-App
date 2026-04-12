@@ -97,3 +97,18 @@ export const fetchMenuItemsByCategory = async (
 export const fetchAllMenuItems = async (): Promise<MenuItem[]> => {
 	return fetchMenuItemsWithCategories()
 }
+
+export const fetchBanners = async () => {
+	try {
+		const { data, error } = await supabase
+			.from('website_banners')
+			.select('*')
+			.order('created_at', { ascending: false })
+
+		if (error) throw error
+		return data || []
+	} catch (error) {
+		console.error('❌ Error fetching banners:', error)
+		return []
+	}
+}

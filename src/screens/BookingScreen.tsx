@@ -1,29 +1,29 @@
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { createClient } from '@supabase/supabase-js'
 import {
-    Calendar,
-    ChevronRight,
-    Clock,
-    DollarSign,
-    Minus,
-    Plus,
-    Users,
-    X,
+  Calendar,
+  ChevronRight,
+  Clock,
+  DollarSign,
+  Minus,
+  Plus,
+  Users,
+  X,
 } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native'
 import { MOCK_TABLES } from '../lib/mocks'
 

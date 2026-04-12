@@ -3,14 +3,12 @@ import { useAuth } from '../context/AuthContext'
 import { OrderWithItems, OrderStatus } from '../hooks/useRealtimeOrders'
 import { supabase } from '../lib/supabase'
 
-// ==================== COURIER ORDER GROUPS ====================
 export interface CourierOrderGroups {
   ready: OrderWithItems[]
   accepted: OrderWithItems[]
   onTheWay: OrderWithItems[]
 }
 
-// ==================== COURIER EARNINGS ====================
 export interface CourierEarnings {
   todayTotal: number
   todayCount: number
@@ -20,7 +18,6 @@ export interface CourierEarnings {
   totalEarnings: number
 }
 
-// ==================== CUSTOM HOOK FOR COURIER ORDERS ====================
 export const useOrders = () => {
   const { user } = useAuth()
   const currentCourierId = user?.id || ''
@@ -28,34 +25,20 @@ export const useOrders = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([])
   const [initialLoading, setInitialLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Refs to prevent subscription recreation and request loops
+  const channelRef = useRef<any>(null)
+  const currentCourierIdRef = useRef(currentCourierId)
   const initialFetchDone = useRef(false)
 
-  // Bootstrap courier_profiles if missing
-  const bootstrapCourierProfile = useCallback(async (courierId: string) => {
-    if (!courierId) return
-    try {
-      const { data: existing } = await supabase
-        .from('courier_profiles')
-        .select('id')
-        .eq('id', courierId)
-        .single()
-
-      if (!existing) {
-        await supabase
-          .from('courier_profiles')
-          .insert({
-            id: courierId,
-            is_online: true,
-          })
-        console.log('[useOrders] Courier profile bootstrapped')
-      }
-    } catch (err) {
-      console.error('[useOrders] Bootstrap courier profile error:', err)
-    }
-  }, [])
+  // Always keep latest courierId in ref for realtime handler
+  useEffect(() => {
+    currentCourierIdRef.current = currentCourierId
+  }, [currentCourierId])
 
   const fetchOrders = useCallback(async () => {
-    if (!currentCourierId) return
+    const cid = currentCourierIdRef.current
+    if (!cid) return
     try {
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
@@ -97,19 +80,21 @@ export const useOrders = () => {
         initialFetchDone.current = true
       }
     }
-  }, [currentCourierId])
+  }, [])
 
+  // Initial fetch when courierId becomes available
   useEffect(() => {
     if (!currentCourierId) {
       setInitialLoading(false)
       return
     }
-
-    bootstrapCourierProfile(currentCourierId)
     fetchOrders()
+  }, [currentCourierId, fetchOrders])
 
+  // Setup realtime subscription ONCE — empty deps, uses refs for latest values
+  useEffect(() => {
     const channel = supabase
-      .channel('courier_orders_realtime')
+      .channel('courier_orders_rt')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
@@ -123,8 +108,7 @@ export const useOrders = () => {
                 .eq('order_id', newOrder.id)
               
               setOrders((prev) => {
-                const alreadyExists = prev.some(o => o.id === newOrder.id)
-                if (alreadyExists) return prev
+                if (prev.some(o => o.id === newOrder.id)) return prev
                 return [{ ...newOrder, order_items: items || [] }, ...prev]
               })
             }
@@ -150,10 +134,12 @@ export const useOrders = () => {
       )
       .subscribe()
 
+    channelRef.current = channel
+
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [currentCourierId, fetchOrders, bootstrapCourierProfile])
+  }, [])
 
   const groupedOrders: CourierOrderGroups = {
     ready: orders.filter(o => o.status === 'ready'),
@@ -167,6 +153,7 @@ export const useOrders = () => {
 
   return {
     orders,
+    setOrders,
     groupedOrders,
     myActiveOrders,
     initialLoading,
@@ -176,28 +163,9 @@ export const useOrders = () => {
   }
 }
 
-// ==================== COURIER ASSIGNMENT HELPERS ====================
-
 export const acceptOrder = async (orderId: string, courierId: string): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Step 1: Ensure courier_profiles exists before any assignment
-    const { data: existingProfile } = await supabase
-      .from('courier_profiles')
-      .select('id')
-      .eq('id', courierId)
-      .maybeSingle()
-
-    if (!existingProfile) {
-      const { error: profileError } = await supabase
-        .from('courier_profiles')
-        .insert({ id: courierId, is_online: true })
-      
-      if (profileError) {
-        console.error('[acceptOrder] Failed to bootstrap courier profile:', profileError)
-      }
-    }
-
-    // Step 2: Update order status to 'accepted' (route added, not yet on the way)
+    // Step 1: Update order status from 'ready' to 'accepted' and assign courier
     const { error: orderError } = await supabase
       .from('orders')
       .update({
@@ -214,7 +182,8 @@ export const acceptOrder = async (orderId: string, courierId: string): Promise<{
       throw orderError
     }
 
-    // Step 3: Upsert courier_assignments (idempotent on order_id)
+    // Step 2: Upsert courier_assignments (idempotent on order_id)
+    // Note: courier_profiles must already exist for this courier
     const { error: assignmentError } = await supabase
       .from('courier_assignments')
       .upsert({
@@ -225,7 +194,7 @@ export const acceptOrder = async (orderId: string, courierId: string): Promise<{
       }, { onConflict: 'order_id' })
 
     if (assignmentError) {
-      console.error('[acceptOrder] Assignment upsert error:', assignmentError)
+      console.error('[acceptOrder] Assignment error (courier_profiles may not exist):', assignmentError)
     }
 
     return { success: true }
@@ -268,8 +237,6 @@ export const deliverOrder = async (orderId: string, courierId: string): Promise<
   }
 }
 
-// ==================== COURIER EARNINGS HELPER ====================
-
 export const fetchCourierEarnings = async (courierId: string): Promise<CourierEarnings> => {
   try {
     const today = new Date()
@@ -291,36 +258,16 @@ export const fetchCourierEarnings = async (courierId: string): Promise<CourierEa
     let todayCount = 0
     let weekTotal = 0
     let weekCount = 0
-    const recentDeliveries: any[] = []
 
     deliveredOrders?.forEach(order => {
       const amount = Number(order.total_amount) || 0
       const deliveredDate = new Date(order.delivered_at)
-      
-      if (deliveredDate >= today) {
-        todayTotal += amount
-        todayCount++
-      }
-      if (deliveredDate >= weekStart) {
-        weekTotal += amount
-        weekCount++
-        if (recentDeliveries.length < 10) {
-          recentDeliveries.push({
-            id: order.id,
-            customer_name: order.customer_name,
-            amount,
-            delivered_at: order.delivered_at,
-            address: order.delivery_address,
-          })
-        }
-      }
+      if (deliveredDate >= today) { todayTotal += amount; todayCount++ }
+      if (deliveredDate >= weekStart) { weekTotal += amount; weekCount++ }
     })
 
     return {
-      todayTotal,
-      todayCount,
-      weekTotal,
-      weekCount,
+      todayTotal, todayCount, weekTotal, weekCount,
       totalDelivered: deliveredOrders?.length || 0,
       totalEarnings: deliveredOrders?.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0) || 0,
     }

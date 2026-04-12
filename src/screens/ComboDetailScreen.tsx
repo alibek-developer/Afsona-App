@@ -1,6 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
+import { useEffect, useState } from 'react'
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   ScrollView,
@@ -13,6 +15,7 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCart } from '../context/CartContext'
+import { supabase } from '../lib/supabase'
 
 const { width, height } = Dimensions.get('window')
 const MAIN_RED = '#FF0000'
@@ -21,13 +24,77 @@ const ComboDetailScreen = () => {
   const route = useRoute<any>()
   const navigation = useNavigation<any>()
   const insets = useSafeAreaInsets()
-  const { combo } = route.params
+  const { bannerId } = route.params
   const { addToCart } = useCart()
 
+  const [banner, setBanner] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchBanner = async () => {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('website_banners')
+          .select('*')
+          .eq('id', bannerId)
+          .single()
+
+        if (error) {
+          console.error('Error fetching banner:', error)
+        } else {
+          setBanner(data)
+        }
+      } catch (err) {
+        console.error('Fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (bannerId) {
+      fetchBanner()
+    }
+  }, [bannerId])
+
   const handleAddToCart = () => {
-    addToCart({ ...combo, quantity: 1 })
-    // Alert o'rniga kichikroq feedback yaxshi, lekin hozircha navigatsiyani saqlaymiz
+    if (!banner) return
+
+    // Narxni stringdan songa o'tkazish (hisob-kitoblar uchun)
+    const numericPrice = banner.cta_button_text 
+      ? parseInt(banner.cta_button_text.replace(/[^0-9]/g, '')) 
+      : 0
+
+    addToCart({ 
+      id: banner.id,
+      name: banner.title,
+      image: banner.image_url,
+      price: numericPrice,
+      quantity: 1 
+    })
     navigation.goBack()
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={MAIN_RED} />
+      </View>
+    )
+  }
+
+  if (!banner) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.description}>Ma'lumot topilmadi</Text>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()}
+          style={[styles.backButton, { top: insets.top + 10 }]}
+        >
+          <MaterialCommunityIcons name="chevron-left" size={28} color="black" />
+        </TouchableOpacity>
+      </View>
+    )
   }
 
   return (
@@ -37,7 +104,7 @@ const ComboDetailScreen = () => {
       {/* 1. Rasm - Header */}
       <View style={styles.imageHeader}>
         <Image
-          source={{ uri: combo.image }}
+          source={{ uri: banner.image_url }}
           style={styles.mainImage}
           resizeMode='cover'
         />
@@ -63,14 +130,14 @@ const ComboDetailScreen = () => {
           style={styles.infoBox}
         >
           <View style={styles.headerRow}>
-            <Text style={styles.title}>{combo.name}</Text>
+            <Text style={styles.title}>{banner.title}</Text>
             <View style={styles.hitBadge}>
               <MaterialCommunityIcons name="fire" size={14} color="white" />
               <Text style={styles.hitText}>POPULAR</Text>
             </View>
           </View>
 
-          <Text style={styles.description}>{combo.description}</Text>
+          <Text style={styles.description}>{banner.description}</Text>
 
           {/* Xususiyatlar */}
           <View style={styles.featuresRow}>
@@ -88,9 +155,7 @@ const ComboDetailScreen = () => {
 
           <Text style={styles.sectionTitle}>Tarkibi va ma'lumot</Text>
           <Text style={styles.longDescription}>
-            Ushbu combo to'plami maxsus saralangan mahsulotlardan tayyorlangan. 
-            Har bir ingredient yangi va sifatli bo'lishiga kafolat beramiz. 
-            Oilaviy yoki do'stlar davrasida tanovul qilish uchun eng qulay tanlov.
+            {banner.link_type}
           </Text>
         </Animated.View>
       </ScrollView>
@@ -102,7 +167,7 @@ const ComboDetailScreen = () => {
       >
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Jami narx:</Text>
-          <Text style={styles.priceValue}>{combo.price.toLocaleString()} UZS</Text>
+          <Text style={styles.priceValue}>{banner.cta_button_text}</Text>
         </View>
 
         <TouchableOpacity
@@ -122,6 +187,7 @@ const ComboDetailScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
+  loadingContainer: { justifyContent: 'center', alignItems: 'center' },
   imageHeader: { width: width, height: height * 0.45 },
   mainImage: { width: '100%', height: '100%' },
   overlay: { 
@@ -141,6 +207,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
+    zIndex: 10,
   },
   contentScroll: {
     flex: 1,
@@ -214,11 +281,9 @@ const styles = StyleSheet.create({
     lineHeight: 22 
   },
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    backgroundColor: 'white',
     paddingHorizontal: 25,
     paddingTop: 20,
+    backgroundColor: 'white',
     width: width,
     flexDirection: 'row',
     alignItems: 'center',

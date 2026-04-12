@@ -263,25 +263,26 @@ const CheckoutScreen = () => {
 				: []
 
 			// 1. Insert into orders table
+			const insertPayload = {
+				customer_name: customerName,
+				phone: customerPhone,
+				order_type: orderType,
+				delivery_address: orderType === 'delivery' ? address : null,
+				latitude: orderType === 'delivery' ? coords?.latitude : null,
+				longitude: orderType === 'delivery' ? coords?.longitude : null,
+				device_id: deviceId,
+				items: orderItemsPayload,
+				total_amount: totals.grandTotal,
+				payment_method: paymentMethod,
+				status: 'new',
+				source: 'mobile_app',
+			}
+			console.log('[Checkout] Insert payload:', JSON.stringify(insertPayload, null, 2))
+
 			const { data: orderData, error: orderError } = await supabase
 				.from('orders')
-				.insert([
-					{
-						customer_name: customerName,
-						phone: customerPhone,
-						order_type: orderType,
-						delivery_address: orderType === 'delivery' ? address : null,
-						latitude: orderType === 'delivery' ? coords?.latitude : null,
-						longitude: orderType === 'delivery' ? coords?.longitude : null,
-						device_id: deviceId,
-						items: orderItemsPayload,
-						total_amount: totals.grandTotal,
-						payment_method: paymentMethod,
-						status: 'new',
-						source: 'mobile_app',
-					},
-				])
-				.select('id')
+				.insert([insertPayload])
+				.select('*')
 				.single()
 
 			if (orderError) {
@@ -289,6 +290,8 @@ const CheckoutScreen = () => {
 				throw orderError
 			}
 			if (!orderData?.id) throw new Error('Order ID not returned')
+
+			console.log('[Checkout] ✅ Order inserted:', orderData.id, 'device_id:', orderData.device_id, 'source:', orderData.source, 'status:', orderData.status)
 
 			// 2. Insert into order_items table
 			const orderItems = Array.isArray(cartItems)
@@ -326,6 +329,7 @@ const CheckoutScreen = () => {
 			}
 
 			clearCart()
+			console.log('[Checkout] Navigating to orders with new order:', orderData.id)
 			Alert.alert('Rahmat!', 'Buyurtmangiz qabul qilindi ✅', [
 				{ text: 'OK', onPress: () => navigation.navigate('Main') },
 			])

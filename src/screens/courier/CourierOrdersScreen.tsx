@@ -26,7 +26,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }
 
 const CourierOrdersScreen = () => {
   const navigation = useNavigation<any>()
-  const { orders, groupedOrders, initialLoading, error, fetchOrders, currentCourierId } = useOrders()
+  const { orders, setOrders, groupedOrders, initialLoading, error, fetchOrders, currentCourierId } = useOrders()
   const [refreshing, setRefreshing] = useState(false)
   const [acceptingIds, setAcceptingIds] = useState<Set<string>>(new Set())
 
@@ -40,15 +40,36 @@ const CourierOrdersScreen = () => {
     if (acceptingIds.has(orderId)) return
     setAcceptingIds(prev => new Set(prev).add(orderId))
 
+    // Optimistic update: immediately move order from ready to accepted
+    const orderToMove = orders.find(o => o.id === orderId)
+    if (orderToMove) {
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? { ...o, status: 'accepted' as const, courier_id: currentCourierId } : o
+      ))
+    }
+
     try {
       const { success, error: acceptError } = await acceptOrder(orderId, currentCourierId)
       if (success) {
         Toast.show({ type: 'success', text1: "Marshrutga qo'shildi ✅" })
+        // Targeted refetch to sync with server
         await fetchOrders()
       } else {
+        // Rollback on error
+        if (orderToMove) {
+          setOrders(prev => prev.map(o =>
+            o.id === orderId ? { ...o, status: 'ready' as const, courier_id: null } : o
+          ))
+        }
         Alert.alert('Xatolik', acceptError || "Marshrutga qo'shishda xatolik")
       }
     } catch (err: any) {
+      // Rollback on error
+      if (orderToMove) {
+        setOrders(prev => prev.map(o =>
+          o.id === orderId ? { ...o, status: 'ready' as const, courier_id: null } : o
+        ))
+      }
       Alert.alert('Xatolik', err.message)
     } finally {
       setAcceptingIds(prev => {

@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-// ==================== NEW ORDER STATUS VALUES ====================
 export type OrderStatus =
 	| 'new'
 	| 'accepted'
@@ -11,7 +10,6 @@ export type OrderStatus =
 	| 'delivered'
 	| 'cancelled'
 
-// ==================== ORDER ITEMS INTERFACE ====================
 export interface OrderItem {
 	id: string
 	order_id: string
@@ -21,7 +19,6 @@ export interface OrderItem {
 	created_at: string
 }
 
-// ==================== MENU ITEM WITH CATEGORY ====================
 export interface MenuItemWithCategory {
 	id: string
 	name: string
@@ -34,7 +31,6 @@ export interface MenuItemWithCategory {
 	created_at: string
 }
 
-// ==================== ORDER WITH ITEMS ====================
 export interface OrderItemJsonb {
 	id: string
 	name: string
@@ -69,10 +65,8 @@ export interface OrderWithItems {
 	order_items?: OrderItem[]
 }
 
-// Legacy alias for backward compatibility
 export type Order = OrderWithItems
 
-// ==================== COURIER ASSIGNMENT INTERFACE ====================
 export interface CourierAssignment {
 	id: string
 	order_id: string
@@ -84,48 +78,9 @@ export interface CourierAssignment {
 	delivered_at?: string
 }
 
-// ==================== CUSTOM HOOK FOR REALTIME ORDERS ====================
-export const useRealtimeOrdersSubscription = (fetchOrders: () => void) => {
-	const channelRef = useRef<any>(null)
-
-	useEffect(() => {
-		// Fetch initial data
-		fetchOrders()
-
-		// Setup realtime subscription for INSERT and UPDATE
-		channelRef.current = supabase
-			.channel('orders')
-			.on(
-				'postgres_changes',
-				{ event: '*', schema: 'public', table: 'orders' },
-				() => {
-					console.log('Orders changed, refreshing...')
-					fetchOrders()
-				},
-			)
-			.subscribe()
-
-		// Cleanup function
-		return () => {
-			if (channelRef.current) {
-				supabase.removeChannel(channelRef.current)
-			}
-		}
-	}, []) // Empty dependency array to prevent infinite loops
-
-	return { channelRef }
-}
-
-// ==================== HELPER: FETCH ORDER ITEMS ====================
-export const fetchOrderItems = async (
-	orderId: string,
-): Promise<OrderItem[]> => {
+export const fetchOrderItems = async (orderId: string): Promise<OrderItem[]> => {
 	try {
-		const { data, error } = await supabase
-			.from('order_items')
-			.select('*')
-			.eq('order_id', orderId)
-
+		const { data, error } = await supabase.from('order_items').select('*').eq('order_id', orderId)
 		if (error) throw error
 		return data || []
 	} catch (error) {
@@ -134,7 +89,6 @@ export const fetchOrderItems = async (
 	}
 }
 
-// ==================== HELPER: FETCH ORDERS WITH ITEMS ====================
 export const fetchOrdersWithItems = async (filters?: {
 	deviceId?: string
 	source?: string
@@ -142,41 +96,23 @@ export const fetchOrdersWithItems = async (filters?: {
 }): Promise<OrderWithItems[]> => {
 	try {
 		let query = supabase.from('orders').select('*')
+		if (filters?.deviceId) query = query.eq('device_id', filters.deviceId)
+		if (filters?.source) query = query.eq('source', filters.source)
+		if (filters?.status && filters.status.length > 0) query = query.in('status', filters.status)
 
-		if (filters?.deviceId) {
-			query = query.eq('device_id', filters.deviceId)
-		}
-
-		if (filters?.source) {
-			query = query.eq('source', filters.source)
-		}
-
-		if (filters?.status && filters.status.length > 0) {
-			query = query.in('status', filters.status)
-		}
-
-		const { data: orders, error } = await query.order('created_at', {
-			ascending: false,
-		})
-
+		const { data: orders, error } = await query.order('created_at', { ascending: false })
 		if (error) throw error
 		if (!orders || orders.length === 0) return []
 
-		// Fetch order items for all orders
 		const orderIds = orders.map(o => o.id)
-		const { data: orderItems } = await supabase
-			.from('order_items')
-			.select('*')
-			.in('order_id', orderIds)
+		const { data: orderItems } = await supabase.from('order_items').select('*').in('order_id', orderIds)
 
-		// Map order items to their orders
 		const itemsMap = new Map<string, OrderItem[]>()
 		orderItems?.forEach(item => {
 			const existing = itemsMap.get(item.order_id) || []
 			itemsMap.set(item.order_id, [...existing, item])
 		})
 
-		// Combine orders with their items
 		return orders.map(order => ({
 			...order,
 			items: Array.isArray((order as any).items) ? (order as any).items : [],
@@ -188,6 +124,21 @@ export const fetchOrdersWithItems = async (filters?: {
 	}
 }
 
+const orderMatchesFilters = (order: OrderWithItems, f?: {
+	status?: OrderStatus[]
+	customerId?: string
+	courierId?: string
+	deviceId?: string
+	source?: string
+}) => {
+	if (f?.status && !f.status.includes(order.status)) return false
+	if (f?.customerId && order.customer_id !== f.customerId) return false
+	if (f?.courierId && order.courier_id !== f.courierId) return false
+	if (f?.deviceId && order.device_id !== f.deviceId) return false
+	if (f?.source && order.source !== f.source) return false
+	return true
+}
+
 export const useRealtimeOrders = (filters?: {
 	status?: OrderStatus[]
 	customerId?: string
@@ -197,149 +148,102 @@ export const useRealtimeOrders = (filters?: {
 }) => {
 	const [orders, setOrders] = useState<OrderWithItems[]>([])
 	const [loading, setLoading] = useState(true)
+	const filtersRef = useRef(filters)
+	const channelRef = useRef<any>(null)
 
+	// Keep latest filters in ref for realtime handler
 	useEffect(() => {
-		// Initial fetch
-		fetchOrders()
+		filtersRef.current = filters
+	}, [filters])
 
-		// Setup realtime subscription
-		const subscription = supabase
-			.channel('orders_channel')
+	// Stable fetch — reads from ref, no deps to avoid recreation
+	const fetchOrders = useCallback(async () => {
+		const f = filtersRef.current
+		setLoading(true)
+		try {
+			if (!f?.deviceId && !f?.customerId && !f?.courierId) {
+				setOrders([])
+				return
+			}
+			const result = await fetchOrdersWithItems({
+				deviceId: f?.deviceId,
+				source: f?.source,
+				status: f?.status,
+			})
+			let filtered = result
+			if (f?.customerId) filtered = filtered.filter(o => o.customer_id === f.customerId)
+			if (f?.courierId) filtered = filtered.filter(o => o.courier_id === f.courierId)
+			setOrders(filtered)
+		} catch (error) {
+			console.error('❌ Error in fetchOrders:', error)
+			setOrders([])
+		} finally {
+			setLoading(false)
+		}
+	}, [])
+
+	// Setup realtime subscription ONCE — stable channel name, empty deps
+	useEffect(() => {
+		const channel = supabase
+			.channel('orders_rt_user')
 			.on(
 				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'orders',
-				},
-				payload => {
-					console.log('Realtime order update:', payload)
-
+				{ event: '*', schema: 'public', table: 'orders' },
+				async payload => {
+					const f = filtersRef.current
 					if (payload.eventType === 'INSERT') {
-						const newOrderRaw = payload.new as OrderWithItems
-						const newOrder: OrderWithItems = {
-							...newOrderRaw,
-							items: Array.isArray((newOrderRaw as any).items)
-								? (newOrderRaw as any).items
-								: [],
+						const raw = payload.new as OrderWithItems
+						const order: OrderWithItems = {
+							...raw,
+							items: Array.isArray((raw as any).items) ? (raw as any).items : [],
 						}
-						if (matchesFilters(newOrder, filters)) {
-							// Fetch order items for new order
-							fetchOrderItems(newOrder.id).then(items => {
-								setOrders((prev: OrderWithItems[]) => [
-									{ ...newOrder, order_items: items },
-									...prev,
-								])
+						if (orderMatchesFilters(order, f)) {
+							const items = await fetchOrderItems(order.id)
+							setOrders(prev => {
+								if (prev.some(o => o.id === order.id)) return prev
+								return [{ ...order, order_items: items }, ...prev]
 							})
 						}
 					} else if (payload.eventType === 'UPDATE') {
-						const updatedRaw = payload.new as OrderWithItems
-						setOrders((prev: OrderWithItems[]) =>
-							prev.map((order: OrderWithItems) => {
-								if (order.id !== updatedRaw.id) return order
-								const nextItems = Array.isArray((updatedRaw as any).items)
-									? (updatedRaw as any).items
-									: Array.isArray((order as any).items)
-										? (order as any).items
-										: []
-								const nextOrderItems = Array.isArray(
-									(updatedRaw as any).order_items,
-								)
-									? (updatedRaw as any).order_items
-									: Array.isArray((order as any).order_items)
-										? (order as any).order_items
-										: []
-								return {
-									...order,
-									...updatedRaw,
-									items: nextItems,
-									order_items: nextOrderItems,
-								}
-							}),
-						)
+						const raw = payload.new as OrderWithItems
+						const include = orderMatchesFilters(raw, f)
+						setOrders(prev => {
+							const exists = prev.some(o => o.id === raw.id)
+							if (exists && include) {
+								return prev.map(o => {
+									if (o.id !== raw.id) return o
+									return {
+										...o,
+										...raw,
+										items: Array.isArray((raw as any).items) ? (raw as any).items : o.items,
+										order_items: Array.isArray((raw as any).order_items) ? (raw as any).order_items : o.order_items,
+									}
+								})
+							}
+							if (exists && !include) return prev.filter(o => o.id !== raw.id)
+							if (!exists && include) return [raw, ...prev]
+							return prev
+						})
 					} else if (payload.eventType === 'DELETE') {
-						const deletedOrder = payload.old as OrderWithItems
-						setOrders((prev: OrderWithItems[]) =>
-							prev.filter(
-								(order: OrderWithItems) => order.id !== deletedOrder.id,
-							),
-						)
+						const id = (payload.old as any).id
+						setOrders(prev => prev.filter(o => o.id !== id))
 					}
 				},
 			)
 			.subscribe()
 
+		channelRef.current = channel
 		return () => {
-			subscription.unsubscribe()
+			supabase.removeChannel(channel)
 		}
-	}, [
-		filters?.status,
-		filters?.customerId,
-		filters?.courierId,
-		filters?.deviceId,
-		filters?.source,
-	])
+	}, [])
 
-	const fetchOrders = async () => {
-		setLoading(true)
-		try {
-			// If no identifying filters, return empty for security
-			if (!filters?.deviceId && !filters?.customerId && !filters?.courierId) {
-				setOrders([])
-				return
-			}
-
-			// Use the helper function to fetch orders with items
-			const ordersWithItems = await fetchOrdersWithItems({
-				deviceId: filters?.deviceId,
-				source: filters?.source,
-				status: filters?.status,
-			})
-
-			// Apply additional filters in memory
-			let filteredOrders = ordersWithItems
-
-			if (filters?.customerId) {
-				filteredOrders = filteredOrders.filter(
-					o => o.customer_id === filters.customerId,
-				)
-			}
-
-			if (filters?.courierId) {
-				filteredOrders = filteredOrders.filter(
-					o => o.courier_id === filters.courierId,
-				)
-			}
-
-			setOrders(filteredOrders)
-		} catch (error) {
-			console.error('❌ Error in fetchOrders, using fallback:', error)
-			setOrders([])
-		} finally {
-			setLoading(false)
-		}
-	}
-
-	const matchesFilters = (order: OrderWithItems, filters?: any) => {
-		if (filters?.status && !filters.status.includes(order.status)) {
-			return false
-		}
-		if (filters?.customerId && order.customer_id !== filters.customerId) {
-			return false
-		}
-		if (filters?.courierId && order.courier_id !== filters.courierId) {
-			return false
-		}
-		if (filters?.deviceId && order.device_id !== filters.deviceId) {
-			return false
-		}
-
-		if (filters?.source && order.source !== filters.source) {
-			return false
-		}
-
-		return true
-	}
+	// Fetch when filters become available (initial load only)
+	useEffect(() => {
+		const f = filters
+		if (!f?.deviceId && !f?.customerId && !f?.courierId) return
+		fetchOrders()
+	}, [fetchOrders, filters?.deviceId, filters?.customerId, filters?.courierId])
 
 	return { orders, loading, refetch: fetchOrders }
 }

@@ -27,7 +27,7 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; label: string; 
 
 const CourierActiveRouteScreen = () => {
   const navigation = useNavigation<any>()
-  const { myActiveOrders, initialLoading, error, fetchOrders, currentCourierId } = useOrders()
+  const { myActiveOrders, setOrders, initialLoading, error, fetchOrders, currentCourierId } = useOrders()
   const [refreshing, setRefreshing] = useState(false)
   const [deliveringId, setDeliveringId] = useState<string | null>(null)
 
@@ -40,15 +40,31 @@ const CourierActiveRouteScreen = () => {
   const handleDeliver = async (orderId: string) => {
     if (deliveringId) return
     setDeliveringId(orderId)
+
+    // Optimistic update: immediately remove order from active list
+    const orderToDeliver = myActiveOrders.find(o => o.id === orderId)
+    if (orderToDeliver) {
+      setOrders(prev => prev.filter(o => o.id !== orderId))
+    }
+
     try {
       const { success, error: deliverError } = await deliverOrder(orderId, currentCourierId)
       if (success) {
         Toast.show({ type: 'success', text1: "Yetkazildi ✅" })
+        // Targeted refetch to sync with server
         await fetchOrders()
       } else {
+        // Rollback on error
+        if (orderToDeliver) {
+          setOrders(prev => [...prev, orderToDeliver])
+        }
         Alert.alert('Xatolik', deliverError || "Yetkazishda xatolik")
       }
     } catch (err: any) {
+      // Rollback on error
+      if (orderToDeliver) {
+        setOrders(prev => [...prev, orderToDeliver])
+      }
       Alert.alert('Xatolik', err.message)
     } finally {
       setDeliveringId(null)
