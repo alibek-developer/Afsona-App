@@ -20,6 +20,7 @@ import { useAuth } from '../context/AuthContext'
 // ==================== CONSTANTS ====================
 const TELEGRAM_BOT_TOKEN = '8639034637:AAFjTYnSjV0aM7lKUryzk5HlUWQokfIZ5to'
 const TELEGRAM_CHAT_ID = '8546680858'
+const MAIN_RED = '#FF4747'
 
 // ==================== MAIN COMPONENT ====================
 const ProfileScreen: React.FC = () => {
@@ -131,16 +132,18 @@ const ProfileScreen: React.FC = () => {
 	const renderLoginForm = () => (
 		<View style={styles.formContainer}>
 			<View style={styles.iconContainer}>
-				<MaterialCommunityIcons
-					name='account-circle'
-					size={80}
-					color='#FF0000'
-				/>
+				<View style={styles.iconBackground}>
+					<MaterialCommunityIcons
+						name='account-key-outline'
+						size={48}
+						color={MAIN_RED}
+					/>
+				</View>
 			</View>
 
-			<Text style={styles.formTitle}>Kirish</Text>
+			<Text style={styles.formTitle}>Xush Kelibsiz</Text>
 			<Text style={styles.formSubtitle}>
-				Profilga kirish uchun email va parolingizni kiriting
+				Profilga kirish uchun malumotlaringizni kiriting
 			</Text>
 
 			{localError ? (
@@ -213,36 +216,44 @@ const ProfileScreen: React.FC = () => {
 	const renderLoggedInState = () => (
 		<View style={styles.profileContainer}>
 			<View style={styles.avatarContainer}>
-				<MaterialCommunityIcons
-					name='account-circle'
-					size={100}
-					color='#FF0000'
-				/>
-			</View>
-
-			<View style={styles.userInfoContainer}>
-				<MaterialCommunityIcons name='email' size={24} color='#FF0000' />
-				<View style={styles.userInfoTextContainer}>
-					<Text style={styles.userInfoLabel}>Email</Text>
-					<Text style={styles.userInfoValue}>{user?.email || fakeEmail}</Text>
+				<View style={styles.avatarBackground}>
+					<MaterialCommunityIcons
+						name='shield-check'
+						size={64}
+						color={'#FFFFFF'}
+					/>
 				</View>
 			</View>
 
-			<View style={styles.userInfoContainer}>
-				<MaterialCommunityIcons
-					name='shield-account'
-					size={24}
-					color='#FF0000'
-				/>
-				<View style={styles.userInfoTextContainer}>
-					<Text style={styles.userInfoLabel}>Rol</Text>
-					<Text style={styles.userInfoValue}>
-						{role === 'kitchen'
-							? 'Kitchen'
-							: role === 'courier'
-								? 'Courier'
-								: 'User'}
-					</Text>
+			<View style={styles.userInfoWrapper}>
+				<View style={styles.userInfoContainer}>
+					<View style={styles.infoIconBox}>
+						<MaterialCommunityIcons name='email-outline' size={22} color={MAIN_RED} />
+					</View>
+					<View style={styles.userInfoTextContainer}>
+						<Text style={styles.userInfoLabel}>Email</Text>
+						<Text style={styles.userInfoValue}>{user?.email || fakeEmail}</Text>
+					</View>
+				</View>
+
+				<View style={styles.userInfoContainer}>
+					<View style={styles.infoIconBox}>
+						<MaterialCommunityIcons
+							name='shield-account-outline'
+							size={22}
+							color={MAIN_RED}
+						/>
+					</View>
+					<View style={styles.userInfoTextContainer}>
+						<Text style={styles.userInfoLabel}>Rol</Text>
+						<Text style={styles.userInfoValue}>
+							{role === 'kitchen'
+								? 'Kitchen'
+								: role === 'courier'
+									? 'Courier'
+									: 'User'}
+						</Text>
+					</View>
 				</View>
 			</View>
 
@@ -251,7 +262,7 @@ const ProfileScreen: React.FC = () => {
 				onPress={handleLogout}
 				activeOpacity={0.8}
 			>
-				<MaterialCommunityIcons name='logout' size={20} color='#FF0000' />
+				<MaterialCommunityIcons name='logout' size={20} color={MAIN_RED} />
 				<Text style={styles.logoutButtonText}>Chiqish</Text>
 			</TouchableOpacity>
 
@@ -274,7 +285,7 @@ const ProfileScreen: React.FC = () => {
 		return (
 			<SafeAreaView style={styles.loadingContainer}>
 				<StatusBar style='dark' />
-				<ActivityIndicator size='large' color='#FF0000' />
+				<ActivityIndicator size='large' color={MAIN_RED} />
 				<Text style={styles.loadingText}>Yuklanmoqda...</Text>
 			</SafeAreaView>
 		)
@@ -316,31 +327,31 @@ const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#FDFDFD',
+		backgroundColor: '#FDFCFB',
 	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		backgroundColor: '#FDFDFD',
+		backgroundColor: '#FDFCFB',
 	},
 	loadingText: {
 		marginTop: 16,
 		fontSize: 16,
-		color: '#6B7280',
-		fontWeight: '600',
+		color: '#78716C',
+		fontWeight: '700',
 	},
 	header: {
 		backgroundColor: '#FFFFFF',
-		paddingBottom: 15,
-		paddingHorizontal: 20,
-		borderBottomLeftRadius: 25,
-		borderBottomRightRadius: 25,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.05,
-		shadowRadius: 8,
-		elevation: 5,
+		paddingBottom: 20,
+		paddingHorizontal: 24,
+		borderBottomLeftRadius: 40,
+		borderBottomRightRadius: 40,
+		shadowColor: '#1C1917',
+		shadowOffset: { width: 0, height: 10 },
+		shadowOpacity: 0.04,
+		shadowRadius: 20,
+		elevation: 8,
 		zIndex: 10,
 	},
 	headerContent: {
@@ -349,183 +360,224 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 	},
 	headerTitle: {
-		fontSize: 22,
-		fontWeight: '800',
-		color: '#111827',
+		fontSize: 24,
+		fontWeight: '900',
+		color: '#1C1917',
+		letterSpacing: 0.5,
 	},
 	content: {
 		flex: 1,
 	},
 	formContainer: {
 		backgroundColor: '#FFFFFF',
-		borderRadius: 28,
-		padding: 28,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.05,
-		shadowRadius: 12,
-		elevation: 4,
-		marginHorizontal: 20,
-		marginTop: 20,
+		borderRadius: 36,
+		padding: 32,
+		shadowColor: '#1C1917',
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.04,
+		shadowRadius: 25,
+		elevation: 5,
+		marginHorizontal: 24,
+		marginTop: 24,
+		borderWidth: 1,
+		borderColor: '#F5F5F4',
 	},
 	iconContainer: {
 		alignItems: 'center',
-		marginBottom: 20,
+		marginBottom: 24,
+	},
+	iconBackground: {
+		width: 80,
+		height: 80,
+		borderRadius: 40,
+		backgroundColor: '#FFF0F0',
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	formTitle: {
-		fontSize: 24,
-		fontWeight: '800',
-		color: '#111827',
+		fontSize: 26,
+		fontWeight: '900',
+		color: '#1C1917',
 		textAlign: 'center',
-		marginBottom: 8,
+		marginBottom: 6,
 	},
 	formSubtitle: {
 		fontSize: 14,
-		color: '#6B7280',
+		color: '#78716C',
 		textAlign: 'center',
-		marginBottom: 24,
-		lineHeight: 20,
+		marginBottom: 32,
+		lineHeight: 22,
+		fontWeight: '500',
 	},
 	errorContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#FFF1F1',
-		paddingVertical: 12,
+		backgroundColor: '#FFF0F0',
+		paddingVertical: 14,
 		paddingHorizontal: 16,
-		borderRadius: 12,
-		marginBottom: 20,
-		gap: 8,
+		borderRadius: 16,
+		marginBottom: 24,
+		gap: 10,
 	},
 	errorText: {
 		fontSize: 14,
-		color: '#FF0000',
-		fontWeight: '600',
+		color: MAIN_RED,
+		fontWeight: '800',
 	},
 	inputContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#F9FAFB',
-		borderRadius: 16,
-		paddingHorizontal: 16,
+		backgroundColor: '#FAF7F5',
+		borderRadius: 20,
+		paddingHorizontal: 18,
 		marginBottom: 16,
-		borderWidth: 1,
-		borderColor: '#E5E7EB',
+		height: 60,
 	},
 	inputIcon: {
-		marginRight: 12,
+		marginRight: 14,
+		color: '#A8A29E',
 	},
 	input: {
 		flex: 1,
-		height: 52,
+		height: '100%',
 		fontSize: 16,
-		color: '#111827',
-		fontWeight: '500',
+		color: '#1C1917',
+		fontWeight: '600',
 	},
 	loginButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#FF0000',
-		height: 56,
-		borderRadius: 16,
-		gap: 8,
-		shadowColor: '#FF0000',
-		shadowOffset: { width: 0, height: 4 },
+		backgroundColor: MAIN_RED,
+		height: 64,
+		borderRadius: 32,
+		gap: 10,
+		shadowColor: MAIN_RED,
+		shadowOffset: { width: 0, height: 6 },
 		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 6,
-		marginTop: 8,
+		shadowRadius: 15,
+		elevation: 8,
+		marginTop: 12,
 	},
 	loginButtonDisabled: {
 		opacity: 0.7,
 	},
 	loginButtonText: {
-		fontSize: 16,
-		fontWeight: '700',
+		fontSize: 18,
+		fontWeight: '900',
 		color: '#FFFFFF',
+		letterSpacing: 0.5,
 	},
 	profileContainer: {
 		backgroundColor: '#FFFFFF',
-		borderRadius: 28,
-		padding: 28,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.05,
-		shadowRadius: 12,
-		elevation: 4,
-		marginHorizontal: 20,
-		marginTop: 20,
+		borderRadius: 36,
+		padding: 32,
+		shadowColor: '#1C1917',
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.04,
+		shadowRadius: 25,
+		elevation: 5,
+		marginHorizontal: 24,
+		marginTop: 24,
 		alignItems: 'center',
+		borderWidth: 1,
+		borderColor: '#F5F5F4',
 	},
 	avatarContainer: {
-		marginBottom: 24,
+		marginBottom: 28,
+	},
+	avatarBackground: {
+		width: 100,
+		height: 100,
+		borderRadius: 50,
+		backgroundColor: MAIN_RED,
+		alignItems: 'center',
+		justifyContent: 'center',
+		shadowColor: MAIN_RED,
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.3,
+		shadowRadius: 15,
+		elevation: 8,
+	},
+	userInfoWrapper: {
+		width: '100%',
+		backgroundColor: '#FAF7F5',
+		borderRadius: 24,
+		padding: 8,
+		marginBottom: 28,
 	},
 	userInfoContainer: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		backgroundColor: '#F9FAFB',
-		borderRadius: 16,
-		padding: 20,
+		padding: 16,
 		width: '100%',
-		marginBottom: 24,
-		borderWidth: 1,
-		borderColor: '#E5E7EB',
+	},
+	infoIconBox: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: '#FFFFFF',
+		alignItems: 'center',
+		justifyContent: 'center',
+		shadowColor: '#1C1917',
+		shadowOpacity: 0.03,
+		shadowRadius: 10,
+		shadowOffset: { width: 0, height: 4 },
+		elevation: 2,
 	},
 	userInfoTextContainer: {
 		marginLeft: 16,
 		flex: 1,
 	},
 	userInfoLabel: {
-		fontSize: 12,
-		color: '#9CA3AF',
-		fontWeight: '600',
-		marginBottom: 4,
+		fontSize: 13,
+		color: '#A8A29E',
+		fontWeight: '700',
+		marginBottom: 2,
 	},
 	userInfoValue: {
 		fontSize: 16,
-		color: '#111827',
-		fontWeight: '700',
+		color: '#1C1917',
+		fontWeight: '800',
 	},
 	logoutButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#FFF1F1',
-		height: 56,
-		borderRadius: 16,
+		backgroundColor: '#FFF0F0',
+		height: 60,
+		borderRadius: 30,
 		gap: 8,
 		width: '100%',
-		borderWidth: 1,
-		borderColor: '#FFE5E5',
 	},
 	logoutButtonDisabled: {
 		opacity: 0.7,
 	},
 	logoutButtonText: {
-		fontSize: 16,
-		fontWeight: '700',
-		color: '#FF0000',
+		fontSize: 17,
+		fontWeight: '900',
+		color: MAIN_RED,
 	},
 	telegramButton: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
 		backgroundColor: '#0088CC',
-		height: 56,
-		borderRadius: 16,
+		height: 60,
+		borderRadius: 30,
 		gap: 8,
 		width: '100%',
-		marginTop: 12,
+		marginTop: 14,
 		shadowColor: '#0088CC',
-		shadowOffset: { width: 0, height: 4 },
+		shadowOffset: { width: 0, height: 6 },
 		shadowOpacity: 0.3,
-		shadowRadius: 8,
-		elevation: 6,
+		shadowRadius: 12,
+		elevation: 8,
 	},
 	telegramButtonText: {
-		fontSize: 16,
-		fontWeight: '700',
+		fontSize: 17,
+		fontWeight: '900',
 		color: '#FFFFFF',
 	},
 })

@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Order } from '../hooks/useRealtimeOrders'
 import { supabase } from '../lib/supabase'
 
+const MAIN_RED = '#FF4747'
+
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 // --- Animated Pulse Marker (Customer / Home) ---
@@ -427,23 +429,35 @@ const UserOrderDetailScreen = () => {
 						</View>
 					)}
 
-					{/* Timeline */}
+					{/* Timeline (Vertical Creative) */}
 					<View style={styles.timelineRow}>
 						{steps.map((step, idx) => (
 							<View key={step.id} style={styles.stepCol}>
-								<View
-									style={[
-										styles.stepDot,
-										idx <= currentStepIndex
-											? styles.dotActive
-											: styles.dotInactive,
-									]}
-								>
-									<MaterialCommunityIcons
-										name={step.icon as any}
-										size={14}
-										color={idx <= currentStepIndex ? '#FFF' : '#9CA3AF'}
-									/>
+								<View style={styles.stepIconWrapper}>
+									<View
+										style={[
+											styles.stepDot,
+											idx <= currentStepIndex
+												? styles.dotActive
+												: styles.dotInactive,
+										]}
+									>
+										<MaterialCommunityIcons
+											name={step.icon as any}
+											size={20}
+											color={idx <= currentStepIndex ? '#FFFFFF' : '#A8A29E'}
+										/>
+									</View>
+									{idx < steps.length - 1 && (
+										<View
+											style={[
+												styles.stepLine,
+												idx < currentStepIndex
+													? styles.lineActive
+													: styles.lineInactive,
+											]}
+										/>
+									)}
 								</View>
 								<Text
 									style={[
@@ -455,16 +469,6 @@ const UserOrderDetailScreen = () => {
 								>
 									{step.label}
 								</Text>
-								{idx < steps.length - 1 && (
-									<View
-										style={[
-											styles.stepLine,
-											idx < currentStepIndex
-												? styles.lineActive
-												: styles.lineInactive,
-										]}
-									/>
-								)}
 							</View>
 						))}
 					</View>
@@ -516,52 +520,54 @@ const UserOrderDetailScreen = () => {
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#F9FAFB' },
+	container: { flex: 1, backgroundColor: '#FDFCFB' },
 
 	// Map
 	mapWrapper: {
 		height: SCREEN_HEIGHT * 0.6,
 		width: '100%',
-		backgroundColor: '#E5E7EB',
+		backgroundColor: '#FAF7F5',
 	},
 	map: { flex: 1 },
 	dineInFull: {
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
-		gap: 8,
-		backgroundColor: '#F9FAFB',
+		gap: 12,
+		backgroundColor: '#FDFCFB',
 	},
-	dineInLabel: { fontSize: 16, color: '#6B7280', fontWeight: '600' },
-	dineInNumber: { fontSize: 64, fontWeight: '900', color: '#111827' },
+	dineInLabel: { fontSize: 17, color: '#78716C', fontWeight: '700' },
+	dineInNumber: { fontSize: 72, fontWeight: '900', color: '#1C1917' },
 
 	floatingBack: {
 		position: 'absolute',
-		left: 16,
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: '#FFF',
+		left: 20,
+		width: 46,
+		height: 46,
+		borderRadius: 23,
+		backgroundColor: '#FFFFFF',
 		alignItems: 'center',
 		justifyContent: 'center',
-		shadowColor: '#000',
-		shadowOpacity: 0.15,
-		shadowRadius: 8,
+		shadowColor: '#1C1917',
+		shadowOpacity: 0.08,
+		shadowRadius: 15,
+		shadowOffset: { width: 0, height: 6 },
 		elevation: 6,
 	},
 
 	// Bottom Sheet
 	sheet: {
 		flex: 1,
-		backgroundColor: '#FFF',
-		borderTopLeftRadius: 28,
-		borderTopRightRadius: 28,
-		marginTop: -28,
-		paddingHorizontal: 20,
-		paddingTop: 24,
-		shadowColor: '#000',
-		shadowOpacity: 0.08,
-		shadowRadius: 12,
+		backgroundColor: '#FFFFFF',
+		borderTopLeftRadius: 36,
+		borderTopRightRadius: 36,
+		marginTop: -32,
+		paddingHorizontal: 24,
+		paddingTop: 30,
+		shadowColor: '#1C1917',
+		shadowOpacity: 0.05,
+		shadowRadius: 20,
+		shadowOffset: { width: 0, height: -10 },
 		elevation: 10,
 	},
 
@@ -575,109 +581,147 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		gap: 6,
-		paddingHorizontal: 12,
-		paddingVertical: 6,
+		paddingHorizontal: 14,
+		paddingVertical: 8,
 		borderRadius: 20,
 	},
-	badgeText: { fontSize: 13, fontWeight: '700' },
-	eta: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
-	liveText: { fontSize: 16, fontWeight: '700', color: '#111827' },
+	badgeText: { fontSize: 13, fontWeight: '800' },
+	eta: { fontSize: 14, color: '#78716C', fontWeight: '700' },
+	liveText: { fontSize: 18, fontWeight: '900', color: '#1C1917', letterSpacing: 0.5 },
 
 	// Courier
 	courierRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 12,
-		padding: 14,
-		backgroundColor: '#F9FAFB',
-		borderRadius: 16,
+		gap: 14,
+		padding: 16,
+		backgroundColor: '#FAF7F5',
+		borderRadius: 20,
 	},
 	courierAvatar: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		backgroundColor: '#FF0000',
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: MAIN_RED,
 		alignItems: 'center',
 		justifyContent: 'center',
+		shadowColor: MAIN_RED,
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 4 },
 	},
-	courierName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-	courierSub: { fontSize: 12, color: '#6B7280' },
+	courierName: { fontSize: 16, fontWeight: '800', color: '#1C1917' },
+	courierSub: { fontSize: 13, color: '#78716C', fontWeight: '600' },
 
-	// Timeline
+	// Timeline (Vertical)
 	timelineRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
+		flexDirection: 'column',
 		position: 'relative',
+		marginTop: 8,
+		backgroundColor: '#FFFFFF',
+		padding: 24,
+		borderRadius: 32, // Very rounded
+		shadowColor: '#1C1917',
+		shadowOpacity: 0.03,
+		shadowRadius: 15,
+		shadowOffset: { width: 0, height: 6 },
+		elevation: 3,
+		borderWidth: 1,
+		borderColor: '#F5F5F4',
 	},
-	stepCol: { alignItems: 'center', flex: 1, position: 'relative' },
+	stepCol: { 
+		flexDirection: 'row', 
+		alignItems: 'center', 
+		gap: 20, 
+		height: 60,
+	},
+	stepIconWrapper: {
+		position: 'relative',
+		alignItems: 'center',
+		justifyContent: 'center',
+		height: '100%',
+		width: 48,
+	},
 	stepDot: {
-		width: 32,
-		height: 32,
-		borderRadius: 16,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
 		alignItems: 'center',
 		justifyContent: 'center',
 		zIndex: 2,
+		shadowColor: MAIN_RED,
+		shadowOpacity: 0.2,
+		shadowRadius: 8,
+		shadowOffset: { width: 0, height: 4 },
 	},
-	dotActive: { backgroundColor: '#FF0000' },
-	dotInactive: { backgroundColor: '#E5E7EB' },
+	dotActive: { backgroundColor: MAIN_RED },
+	dotInactive: { backgroundColor: '#F5F5F4', shadowOpacity: 0 },
 	stepLabel: {
-		fontSize: 9,
-		marginTop: 6,
-		fontWeight: '700',
-		textAlign: 'center',
+		fontSize: 16,
+		fontWeight: '900',
 	},
-	labelActive: { color: '#111827' },
-	labelInactive: { color: '#9CA3AF' },
+	labelActive: { color: '#1C1917' },
+	labelInactive: { color: '#A8A29E' },
 	stepLine: {
 		position: 'absolute',
-		top: 16,
-		left: '50%',
-		width: '100%',
-		height: 2,
+		top: 48, // starts below the dot
+		left: 23,
+		width: 3,
+		height: 32, // spans to next dot
 		zIndex: 1,
+		borderRadius: 2,
 	},
-	lineActive: { backgroundColor: '#FF0000' },
-	lineInactive: { backgroundColor: '#E5E7EB' },
+	lineActive: { backgroundColor: MAIN_RED },
+	lineInactive: { backgroundColor: '#F5F5F4' },
 
 	// Info
 	infoCard: {
 		flexDirection: 'row',
 		alignItems: 'flex-start',
-		gap: 10,
-		padding: 14,
-		backgroundColor: '#F9FAFB',
-		borderRadius: 14,
+		gap: 12,
+		padding: 18,
+		backgroundColor: '#FAF7F5',
+		borderRadius: 20,
 	},
-	infoText: { flex: 1, fontSize: 14, color: '#374151', lineHeight: 20 },
+	infoText: { flex: 1, fontSize: 14, color: '#44403C', lineHeight: 22, fontWeight: '600' },
 
 	// Items
 	itemsCard: {
-		backgroundColor: '#F9FAFB',
-		borderRadius: 16,
-		padding: 16,
-		gap: 10,
+		backgroundColor: '#FFFFFF',
+		borderRadius: 28,
+		padding: 24,
+		gap: 12,
+		shadowColor: '#1C1917',
+		shadowOpacity: 0.04,
+		shadowRadius: 20,
+		shadowOffset: { width: 0, height: 8 },
+		elevation: 4,
+		borderWidth: 1,
+		borderColor: '#F5F5F4',
+		marginBottom: 20,
 	},
 	sectionTitle: {
-		fontSize: 15,
-		fontWeight: '700',
-		color: '#111827',
-		marginBottom: 4,
+		fontSize: 16,
+		fontWeight: '900',
+		color: '#1C1917',
+		marginBottom: 8,
+		letterSpacing: 0.5,
 	},
-	itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-	itemQty: { fontSize: 14, fontWeight: '800', color: '#FF0000', width: 24 },
-	itemName: { flex: 1, fontSize: 14, color: '#374151' },
-	itemPrice: { fontSize: 14, fontWeight: '700', color: '#111827' },
+	itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+	itemQty: { fontSize: 15, fontWeight: '900', color: MAIN_RED, width: 28 },
+	itemName: { flex: 1, fontSize: 15, color: '#44403C', fontWeight: '600' },
+	itemPrice: { fontSize: 15, fontWeight: '800', color: '#1C1917' },
 	totalRow: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		borderTopWidth: 1,
-		borderTopColor: '#E5E7EB',
-		paddingTop: 12,
-		marginTop: 4,
+		borderTopWidth: 1.5,
+		borderTopColor: '#F5F5F4',
+		paddingTop: 16,
+		marginTop: 8,
 	},
-	totalLabel: { fontSize: 16, fontWeight: '700', color: '#111827' },
-	totalValue: { fontSize: 18, fontWeight: '900', color: '#FF0000' },
+	totalLabel: { fontSize: 18, fontWeight: '900', color: '#1C1917' },
+	totalValue: { fontSize: 20, fontWeight: '900', color: MAIN_RED },
 })
 
 export default UserOrderDetailScreen

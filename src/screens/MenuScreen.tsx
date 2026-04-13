@@ -1,33 +1,33 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native'
 import { Calendar, ChevronRight, Search, ShoppingCart } from 'lucide-react-native'; // Calendar va ChevronRight qo'shildi
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react'
 import {
-    ActivityIndicator,
-    Dimensions,
-    ImageBackground,
-    Platform,
-    RefreshControl,
-    StatusBar as RNStatusBar,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+  ActivityIndicator,
+  Dimensions,
+  ImageBackground,
+  Platform,
+  RefreshControl,
+  StatusBar as RNStatusBar,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 
-import { CategoryItem } from '../components/CategoryItem';
-import { FoodCard } from '../components/FoodCard';
-import { COMBO_SETS } from '../constants/mockData';
-import { useCart } from '../context/CartContext';
+import { CategoryItem } from '../components/CategoryItem'
+import { FoodCard } from '../components/FoodCard'
+import { COMBO_SETS } from '../constants/mockData'
+import { useCart } from '../context/CartContext'
 import {
-    Category,
-    fetchCategories,
-    fetchMenuItemsByCategory,
-    MenuItem,
-    fetchBanners,
-} from '../services/api';
+  Category,
+  fetchBanners,
+  fetchCategories,
+  fetchMenuItemsByCategory,
+  MenuItem,
+} from '../services/api'
 
 const { width } = Dimensions.get('window')
 const MAIN_RED = '#FF0000'
@@ -101,21 +101,21 @@ const MenuScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle='dark-content' backgroundColor='white' translucent />
+      <StatusBar barStyle='dark-content' backgroundColor='#F9FAFB' translucent />
 
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.welcomeText}>Xush kelibsiz! 👋</Text>
-            <Text style={styles.brandTitle}>Afsona Restoran Menu</Text>
+            <Text style={styles.brandTitle}>Afsona Menu</Text>
           </View>
           <TouchableOpacity
             onPress={() => navigation.navigate('Savat')}
             style={styles.cartButton}
             activeOpacity={0.8}
           >
-            <ShoppingCart size={22} color='white' />
+            <ShoppingCart size={22} color='#111827' />
             {(cartItems?.length || 0) > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{cartItems.length}</Text>
@@ -126,12 +126,12 @@ const MenuScreen = () => {
 
         {/* SEARCH BAR */}
         <View style={styles.searchWrapper}>
-          <Search size={18} color='#9CA3AF' />
+          <Search size={20} color='#9CA3AF' />
           <TextInput
-            placeholder='Taomlarni izlash...'
+            placeholder='Sevimli taomingizni izlang...'
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor='#9CA3AF'
+            placeholderTextColor='#A1A1AA'
             style={styles.searchInput}
           />
         </View>
@@ -149,28 +149,38 @@ const MenuScreen = () => {
         }
       >
         
-        {/* --- YANGI QO'SHILGAN: XONA BRON QILISH TUGMASI --- */}
+        {/* --- XONA BRON QILISH TUGMASI (YANGILANGAN) --- */}
         <TouchableOpacity 
           style={styles.bookingBanner}
           activeOpacity={0.9}
-          onPress={() => navigation.navigate('Booking')} // BookingScreen ga o'tish
+          onPress={() => navigation.navigate('Booking')}
         >
-          <View style={styles.bookingContent}>
-            <View style={styles.iconCircle}>
-              <Calendar size={24} color={MAIN_RED} />
+          <ImageBackground
+            source={{ uri: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop' }} // Restoran foni
+            style={styles.bookingBg}
+            imageStyle={{ borderRadius: 24 }}
+          >
+            <View style={styles.bookingOverlay}>
+              <View style={styles.bookingContent}>
+                <View style={styles.bookingTexts}>
+                  <Text style={styles.bookingTitle}>Joy band qilish</Text>
+                  <Text style={styles.bookingSubtitle}>Oilaviy yoki do'stlar davrasida unutilmas oqshom</Text>
+                </View>
+                <View style={styles.iconCircle}>
+                  <ChevronRight size={24} color={MAIN_RED} />
+                </View>
+              </View>
             </View>
-            <View style={styles.bookingTexts}>
-              <Text style={styles.bookingTitle}>Joy band qilish</Text>
-              <Text style={styles.bookingSubtitle}>Oilaviy yoki do'stlar bilan</Text>
-            </View>
-            <ChevronRight size={20} color="#9CA3AF" />
-          </View>
+          </ImageBackground>
         </TouchableOpacity>
         {/* -------------------------------------------------- */}
 
-        {/* BUGUNGI TAKLIFLAR (COMBO) */}
+        {/* BUGUNGI TAKLIFLAR (COMBO) (YANGILANGAN) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bugungi Takliflar</Text>
+          <View style={styles.sectionHeaderLine}>
+             <Text style={styles.sectionTitle}>Maxsus takliflar</Text>
+             <MaterialCommunityIcons name="fire" size={24} color="#EF4444" />
+          </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -186,10 +196,12 @@ const MenuScreen = () => {
                 <ImageBackground
                   source={{ uri: item.image_url }}
                   style={styles.comboImage}
-                  imageStyle={{ borderRadius: 25 }}
+                  imageStyle={{ borderRadius: 28 }}
                 >
-                  <View style={styles.comboOverlay}>
-                    <Text style={styles.comboName}>{item.title}</Text>
+                  <View style={styles.comboGradient}>
+                    <View>
+                      <Text style={styles.comboName}>{item.title}</Text>
+                    </View>
                     <View style={styles.priceTag}>
                       <Text style={styles.comboPrice}>
                         {item.cta_button_text}
@@ -204,7 +216,7 @@ const MenuScreen = () => {
 
         {/* BO'LIMLAR (CATEGORIES) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Menyu Bo'limlari</Text>
+          <Text style={styles.sectionTitle}>Menyu</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -234,7 +246,9 @@ const MenuScreen = () => {
                 ? 'Barcha taomlar'
                 : selectedCategoryName}
             </Text>
-            <Text style={styles.countText}>{(filteredData?.length || 0)} ta</Text>
+            <View style={styles.countBadge}>
+               <Text style={styles.countText}>{(filteredData?.length || 0)}</Text>
+            </View>
           </View>
 
           {loading && !refreshing ? (
@@ -253,9 +267,9 @@ const MenuScreen = () => {
                 ))
               ) : (
                 <View style={styles.emptyResults}>
-                  <Text style={styles.emptyResultsText}>Hech narsa topilmadi 😕</Text>
+                  <Text style={styles.emptyResultsText}>Biz bu bo'limda hech narsa topmadik 😕</Text>
                   <TouchableOpacity onPress={onRefresh} style={styles.retryButton}>
-                    <Text style={styles.retryButtonText}>Qayta urinish</Text>
+                    <Text style={styles.retryButtonText}>Yangilash</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -267,39 +281,68 @@ const MenuScreen = () => {
   )
 }
 
+import { MaterialCommunityIcons } from '@expo/vector-icons'
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB', // Yengil kulrang fon (premium ko'rinish uchun)
   },
   header: {
-    // Android va iOS uchun xavfsiz tepa qism
-    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) + 10 : 55,
+    paddingTop: Platform.OS === 'android' ? (RNStatusBar.currentHeight || 0) + 10 : 50,
     paddingHorizontal: 20,
-    paddingBottom: 15,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   welcomeText: {
-    fontSize: 13,
-    color: '#9CA3AF',
+    fontSize: 14,
+    color: '#6B7280',
     fontWeight: '500',
+    letterSpacing: 0.5,
   },
   brandTitle: {
-    fontSize: 25,
+    fontSize: 24,
     fontWeight: '900',
     color: '#111827',
-    letterSpacing: -0.8,
+    letterSpacing: -0.5,
+    marginTop: 2,
+  },
+  cartButton: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: MAIN_RED,
+    borderRadius: 12,
+    minWidth: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  cartBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '900',
   },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F4F4F5',
     paddingHorizontal: 15,
     height: 48,
     borderRadius: 14,
@@ -310,159 +353,159 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#111827',
     height: '100%',
-  },
-  cartButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: MAIN_RED,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Soft red shadow
-    shadowColor: MAIN_RED,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#111827',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  cartBadgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '500',
   },
   scrollContent: {
-    paddingBottom: 100, // Tab bar uchun joy
+    paddingBottom: 110, 
+    paddingTop: 5,
   },
-  // --- YANGI TUGMA STYLE ---
+  
+  // --- YANGILANGAN BRON QILISH BANNERI ---
   bookingBanner: {
     marginHorizontal: 20,
-    marginTop: 15,
-    backgroundColor: '#FEF2F2', // Juda och qizil fon
-    borderRadius: 20,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
+    marginTop: 10,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  bookingBg: {
+    width: '100%',
+    height: 90,
+    justifyContent: 'center',
+  },
+  bookingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 24,
+    padding: 20,
+    justifyContent: 'center',
   },
   bookingContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  iconCircle: {
-    width: 45,
-    height: 45,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
   bookingTexts: {
     flex: 1,
-    marginLeft: 15,
+    paddingRight: 10,
   },
   bookingTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#111827',
+    color: '#FFFFFF',
+    marginBottom: 2,
   },
   bookingSubtitle: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
+    color: '#E5E7EB',
+    fontWeight: '400',
+    lineHeight: 16,
   },
-  // -------------------------
+  iconCircle: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // ----------------------------------------
+
   section: {
-    marginTop: 18,
+    marginTop: 20,
+  },
+  sectionHeaderLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    gap: 6,
   },
   sectionTitle: {
     fontSize: 19,
     fontWeight: '800',
     color: '#111827',
-    paddingHorizontal: 20,
-    marginBottom: 10,
   },
   horizontalScroll: {
     paddingLeft: 20,
     paddingRight: 10,
   },
   categoryScroll: {
-    paddingLeft: 20,
+    paddingLeft: 24,
     paddingRight: 10,
   },
   comboCard: {
-    marginRight: 15,
-    width: width * 0.78,
-    height: 170,
-    borderRadius: 25,
-    backgroundColor: '#F3F4F6',
+    marginRight: 16,
+    width: width * 0.75,
+    height: 190,
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
   },
   comboImage: {
     width: '100%',
     height: '100%',
     justifyContent: 'flex-end',
   },
-  comboOverlay: {
-    padding: 15,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+  comboGradient: {
+    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   comboName: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
+    marginBottom: 4,
   },
   priceTag: {
-    backgroundColor: MAIN_RED,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    marginTop: 6,
+    backgroundColor: 'white',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   comboPrice: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
+    color: MAIN_RED,
+    fontSize: 13,
+    fontWeight: '800',
   },
   listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingRight: 20,
-    marginBottom: 5,
+    paddingHorizontal: 24,
+    marginBottom: 12,
+  },
+  countBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   countText: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#4B5563',
+    fontSize: 14,
+    fontWeight: '700',
   },
   foodGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 8,
+    paddingHorizontal: 20,
+    justifyContent: 'space-between',
   },
   foodCardWrapper: {
-    width: '50%',
-    padding: 2,
+    width: '48%',
+    marginBottom: 16,
   },
   emptyResults: {
     flex: 1,
@@ -472,21 +515,27 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyResultsText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    fontWeight: '600',
-    marginBottom: 16,
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   retryButton: {
     backgroundColor: MAIN_RED,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: MAIN_RED,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   retryButtonText: {
     color: 'white',
     fontWeight: '800',
-    fontSize: 14,
+    fontSize: 15,
   },
 })
 

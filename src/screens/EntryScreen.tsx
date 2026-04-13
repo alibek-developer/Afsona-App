@@ -1,169 +1,251 @@
-import { useNavigation } from '@react-navigation/native'
+import { NavigationProp, useNavigation } from '@react-navigation/native'
 import React from 'react'
 import {
 	Dimensions,
+	Platform,
+	SafeAreaView,
+	StatusBar,
 	StyleSheet,
 	Text,
 	TouchableOpacity,
 	View,
 } from 'react-native'
 
-const { width, height } = Dimensions.get('window')
+const { width } = Dimensions.get('window');
 
-const EntryScreen = () => {
-	const navigation = useNavigation<any>()
+// 🔹 Navigation tipi
+type RootStackParamList = {
+	Main: { mode: 'dine-in' | 'delivery' };
+};
+type Navigation = NavigationProp<RootStackParamList>;
+
+const MAIN_RED = '#FF4747';
+
+const EntryScreen: React.FC = () => {
+	const navigation = useNavigation<Navigation>();
 
 	const handleModeSelect = (mode: 'dine-in' | 'delivery') => {
-		navigation.navigate('Main', { mode })
-	}
+		navigation.navigate('Main', { mode });
+	};
 
 	return (
-		<View style={styles.container}>
-			{/* Background with gradient effect using View */}
-			<View style={styles.backgroundGradient} />
+		<SafeAreaView style={styles.container}>
+			<StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
-			{/* Content */}
+			{/* Sokin fonga nisbatan orqa ko'rinish */}
+			<View style={styles.backgroundAccent} />
+
 			<View style={styles.content}>
-				{/* Logo/Title */}
-				<View style={styles.titleContainer}>
-					<Text style={styles.logo}>FoodFlow</Text>
-					<Text style={styles.subtitle}>Tezkor va mazali taomlar</Text>
+				{/* 🏷️ Header & Logo */}
+				<View style={styles.header}>
+					<View style={styles.logoBadge}>
+						<Text style={styles.logoText}>🔥</Text>
+					</View>
+					<Text style={styles.title}>Afsona</Text>
+					<Text style={styles.subtitle}>Premium Restoran</Text>
+					<Text style={styles.question}>Bugun qanday buyurtma qilamiz?</Text>
 				</View>
 
-				{/* Selection Buttons */}
-				<View style={styles.buttonContainer}>
-					{/* Dine-in Button */}
+				{/* 📦 Tanlash kartochkalari */}
+				<View style={styles.cardStack}>
+					{/* Yetkazib berish (Asosiy action) */}
 					<TouchableOpacity
-						style={[styles.glassButton, styles.dineInButton]}
-						onPress={() => handleModeSelect('dine-in')}
-						activeOpacity={0.8}
-					>
-						<View style={styles.buttonContent}>
-							<Text style={styles.buttonIcon}>🍴</Text>
-							<Text style={styles.buttonTitle}>Restoran ichida</Text>
-							<Text style={styles.buttonDescription}>O'tirib ovqatlanish</Text>
-						</View>
-					</TouchableOpacity>
-
-					{/* Delivery Button */}
-					<TouchableOpacity
-						style={[styles.glassButton, styles.deliveryButton]}
+						style={[styles.card, styles.primaryCard]}
 						onPress={() => handleModeSelect('delivery')}
-						activeOpacity={0.8}
+						activeOpacity={0.9}
 					>
-						<View style={styles.buttonContent}>
-							<Text style={styles.buttonIcon}>🛵</Text>
-							<Text style={styles.buttonTitle}>Yetkazib berish</Text>
-							<Text style={styles.buttonDescription}>Uyingizga yetkazamiz</Text>
+						<View style={styles.cardRow}>
+							<View style={[styles.cardIconBox, styles.primaryIconBox]}>
+								<Text style={styles.primaryIcon}>🛵</Text>
+							</View>
+							<View style={styles.cardInfo}>
+								<Text style={[styles.cardTitle, styles.primaryTitle]}>Yetkazib berish</Text>
+								<Text style={[styles.cardDesc, styles.primaryDesc]}>Issiqqina uyingizgacha</Text>
+							</View>
+							<View style={styles.arrowBoxLight}>
+								<Text style={[styles.cardArrow, styles.primaryArrow]}>›</Text>
+							</View>
+						</View>
+					</TouchableOpacity>
+
+					{/* Restoran ichida */}
+					<TouchableOpacity
+						style={styles.card}
+						onPress={() => handleModeSelect('dine-in')}
+						activeOpacity={0.85}
+					>
+						<View style={styles.cardRow}>
+							<View style={styles.cardIconBox}>
+								<Text style={styles.cardIcon}>🍽</Text>
+							</View>
+							<View style={styles.cardInfo}>
+								<Text style={styles.cardTitle}>Restoran ichida</Text>
+								<Text style={styles.cardDesc}>Stolingizga xizmat qilamiz</Text>
+							</View>
+							<View style={styles.arrowBoxDark}>
+								<Text style={styles.cardArrow}>›</Text>
+							</View>
 						</View>
 					</TouchableOpacity>
 				</View>
 
-				{/* Footer */}
-				<View style={styles.footer}>
-					<Text style={styles.footerText}>
-						© 2024 FoodFlow. Barcha huquqlar himoyalangan.
-					</Text>
-				</View>
+				{/* 🔻 Footer */}
+				<Text style={styles.footer}>
+					Xush kelibsiz! Har bir detalliga mehr berilgan.
+				</Text>
 			</View>
-		</View>
-	)
-}
+		</SafeAreaView>
+	);
+};
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#FF6B01',
+		backgroundColor: '#FDFCFB',
 	},
-	backgroundGradient: {
+	backgroundAccent: {
 		position: 'absolute',
-		left: 0,
-		right: 0,
-		top: 0,
-		height: height * 0.6,
-		backgroundColor: '#FF8C42',
+		top: -150,
+		left: -50,
+		width: width * 1.5,
+		height: width * 1.5,
+		borderRadius: width * 0.75,
+		backgroundColor: '#FFF0F0',
 		opacity: 0.8,
 	},
 	content: {
 		flex: 1,
+		paddingHorizontal: 24,
+		justifyContent: 'center',
+		paddingBottom: 20,
+	},
+	header: {
+		alignItems: 'center',
+		marginBottom: 48,
+	},
+	logoBadge: {
+		width: 80,
+		height: 80,
+		borderRadius: 40,
+		backgroundColor: MAIN_RED,
 		justifyContent: 'center',
 		alignItems: 'center',
-		paddingHorizontal: 24,
+		shadowColor: MAIN_RED,
+		shadowOffset: { width: 0, height: 10 },
+		shadowOpacity: 0.3,
+		shadowRadius: 15,
+		elevation: 8,
+		marginBottom: 20,
 	},
-	titleContainer: {
-		alignItems: 'center',
-		marginBottom: 80,
+	logoText: {
+		fontSize: 36,
 	},
-	logo: {
-		fontSize: 48,
-		fontWeight: '800',
-		color: '#FFFFFF',
-		marginBottom: 8,
-		textShadowColor: 'rgba(0, 0, 0, 0.1)',
-		textShadowOffset: { width: 0, height: 2 },
-		textShadowRadius: 4,
+	title: {
+		fontSize: 32,
+		fontWeight: '900',
+		color: '#1C1917',
+		letterSpacing: -0.5,
+		marginBottom: 2,
 	},
 	subtitle: {
-		fontSize: 16,
-		color: 'rgba(255, 255, 255, 0.9)',
-		fontWeight: '500',
+		fontSize: 15,
+		color: '#A8A29E',
+		fontWeight: '800',
+		letterSpacing: 2,
+		textTransform: 'uppercase',
+		marginBottom: 24,
 	},
-	buttonContainer: {
-		width: '100%',
+	question: {
+		fontSize: 20,
+		fontWeight: '800',
+		color: '#1C1917',
+		textAlign: 'center',
+	},
+	cardStack: {
 		gap: 20,
 	},
-	glassButton: {
-		width: '100%',
-		height: 140,
-		borderRadius: 24,
-		backgroundColor: 'rgba(255, 255, 255, 0.15)',
+	card: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 36,
+		padding: 12,
+		shadowColor: '#1C1917',
+		shadowOffset: { width: 0, height: 12 },
+		shadowOpacity: 0.04,
+		shadowRadius: 20,
+		elevation: 5,
 		borderWidth: 1,
-		borderColor: 'rgba(255, 255, 255, 0.2)',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 8 },
-		shadowOpacity: 0.1,
-		shadowRadius: 16,
-		elevation: 8,
+		borderColor: 'rgba(0,0,0,0.02)',
 	},
-	dineInButton: {
-		backgroundColor: 'rgba(255, 255, 255, 0.25)',
+	primaryCard: {
+		backgroundColor: MAIN_RED,
+		shadowColor: MAIN_RED,
+		shadowOpacity: 0.25,
 	},
-	deliveryButton: {
-		backgroundColor: 'rgba(255, 255, 255, 0.15)',
+	cardRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
 	},
-	buttonContent: {
-		flex: 1,
+	cardIconBox: {
+		width: 60,
+		height: 60,
+		borderRadius: 24,
+		backgroundColor: '#F5F5F4',
 		justifyContent: 'center',
 		alignItems: 'center',
-		paddingHorizontal: 20,
+		marginRight: 16,
 	},
-	buttonIcon: {
-		fontSize: 40,
-		marginBottom: 12,
+	primaryIconBox: {
+		backgroundColor: 'rgba(255,255,255,0.2)',
 	},
-	buttonTitle: {
-		fontSize: 20,
-		fontWeight: '700',
-		color: '#FFFFFF',
+	cardIcon: { fontSize: 26 },
+	primaryIcon: { fontSize: 26 },
+	cardInfo: { flex: 1 },
+	cardTitle: {
+		fontSize: 18,
+		fontWeight: '800',
+		color: '#1C1917',
 		marginBottom: 4,
-		textAlign: 'center',
 	},
-	buttonDescription: {
-		fontSize: 14,
-		color: 'rgba(255, 255, 255, 0.8)',
-		textAlign: 'center',
-		fontWeight: '500',
+	primaryTitle: { color: '#FFFFFF' },
+	cardDesc: {
+		fontSize: 13,
+		color: '#78716C',
+		fontWeight: '600',
 	},
-	footer: {
-		position: 'absolute',
-		bottom: 40,
+	primaryDesc: { color: 'rgba(255,255,255,0.9)' },
+	arrowBoxDark: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: '#FAF7F5',
 		alignItems: 'center',
+		justifyContent: 'center',
+		marginRight: 6,
 	},
-	footerText: {
-		fontSize: 12,
-		color: 'rgba(255, 255, 255, 0.7)',
-		fontWeight: '500',
+	arrowBoxLight: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: 'rgba(255,255,255,0.2)',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginRight: 6,
 	},
-})
+	cardArrow: {
+		fontSize: 24,
+		color: '#A8A29E',
+		fontWeight: '600',
+		marginTop: -4,
+	},
+	primaryArrow: { color: '#FFFFFF' },
+	footer: {
+		textAlign: 'center',
+		fontSize: 13,
+		color: '#A8A29E',
+		marginTop: 'auto',
+		marginBottom: Platform.OS === 'ios' ? 10 : 20,
+		fontWeight: '700',
+	},
+});
 
-export default EntryScreen
+export default EntryScreen;

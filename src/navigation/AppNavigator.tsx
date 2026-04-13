@@ -4,12 +4,11 @@ import BookingScreen from '../screens/BookingScreen'
 import CheckoutScreen from '../screens/CheckoutScreen'
 import ComboDetailScreen from '../screens/ComboDetailScreen'
 import CourierOrderDetailScreen from '../screens/CourierOrderDetailScreen'
-import KitchenScreen from '../screens/KitchenScreen'
 import PaymentSuccessScreen from '../screens/PaymentSuccessScreen'
 import SelectionScreen from '../screens/SelectionScreen'
 import UserOrderDetailScreen from '../screens/UserOrderDetailScreen'
-import TabNavigator from './TabNavigator'
 import CourierTabNavigator from './CourierTabNavigator'
+import TabNavigator from './TabNavigator'
 
 const Stack = createNativeStackNavigator()
 
@@ -53,12 +52,7 @@ const UserStack = () => (
   </Stack.Navigator>
 )
 
-// Kitchen Stack Navigator (for kitchen staff)
-const KitchenStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name='KitchenMain' component={KitchenScreen} />
-  </Stack.Navigator>
-)
+
 
 // Courier Stack Navigator (for couriers) — wraps bottom tabs + order detail
 const CourierStack = () => (
@@ -79,10 +73,6 @@ const AppNavigator = () => {
 
   if (loading) {
     return null
-  }
-
-  if (user && role === 'kitchen') {
-    return <KitchenStack />
   }
 
   if (user && role === 'courier') {

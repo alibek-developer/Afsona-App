@@ -21,7 +21,7 @@ import {
 } from '../hooks/useRealtimeOrders'
 import { getOrCreateDeviceId } from '../lib/auth'
 
-const MAIN_RED = '#FF0000'
+const MAIN_RED = '#FF4747'
 
 const OrdersScreen = () => {
 	const navigation = useNavigation<any>()
@@ -163,97 +163,72 @@ const OrdersScreen = () => {
 			<TouchableOpacity
 				style={styles.card}
 				onPress={() => navigation.navigate('UserOrderDetail', { order: item })}
-				activeOpacity={0.9}
+				activeOpacity={0.8}
 			>
-				<View style={styles.cardHeader}>
-					<View style={styles.idContainer}>
-						<View style={styles.orderIconBox}>
-							<MaterialCommunityIcons
-								name={status.icon as any}
-								size={18}
-								color={status.color}
-							/>
-						</View>
+				{/* The colored left strip indicating status visually clearly */}
+				<View style={[styles.statusStrip, { backgroundColor: status.color }]} />
+
+				<View style={styles.cardInner}>
+					{/* Top Header */}
+					<View style={styles.cardHeaderRow}>
 						<View>
+							<Text style={styles.orderIdTitle}>Buyurtma</Text>
 							<Text style={styles.orderId}>
-								#{item.id?.slice(0, 8).toUpperCase() || 'UNKN'}
+								#{item.id?.slice(0, 6).toUpperCase() || 'UNKN'}
 							</Text>
-							<Text style={styles.timeText}>
-								{date}, {time}
-							</Text>
+						</View>
+						<View style={styles.dateCol}>
+							<MaterialCommunityIcons name='calendar-blank' size={14} color='#A8A29E' />
+							<Text style={styles.dateText}>{date}  {time}</Text>
 						</View>
 					</View>
 
-					<View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-						<View
-							style={[styles.statusDot, { backgroundColor: status.color }]}
-						/>
-						<Text style={[styles.statusText, { color: status.color }]}>
-							{status.label}
-						</Text>
-					</View>
-				</View>
+					<View style={styles.dividerDashed} />
 
-				<View style={styles.divider} />
-
-				<View style={styles.customerBox}>
-					<View style={[styles.avatar, { backgroundColor: MAIN_RED + '15' }]}>
-						<Text style={[styles.avatarText, { color: MAIN_RED }]}>
-							{item.customer_name ? item.customer_name[0].toUpperCase() : '?'}
-						</Text>
-					</View>
-
-					<View style={styles.customerDetails}>
-						<Text style={styles.customerName}>
-							{item.customer_name || "Noma'lum"}
-						</Text>
-						<Text style={styles.customerPhone}>{item.phone || ''}</Text>
-					</View>
-
-					<View style={styles.typeBadge}>
-						<Text style={styles.typeText}>
-							{item.order_type === 'delivery' ? '🛵 Yetkazish' : '🍽️ Zal'}
-						</Text>
-					</View>
-				</View>
-
-				{item.delivery_address ? (
-					<View style={styles.tableIndicator}>
-						<MaterialCommunityIcons
-							name='map-marker'
-							size={12}
-							color={MAIN_RED}
-						/>
-						<Text style={styles.tableText} numberOfLines={1}>
-							{item.delivery_address}
-						</Text>
-					</View>
-				) : null}
-
-				<View style={styles.itemsList}>
-					{items.slice(0, 3).map((food: any, index: number) => (
-						<View key={index} style={styles.foodRow}>
-							<View style={styles.qtyBox}>
-								<Text style={styles.qtyText}>{food.quantity || 1}x</Text>
+					{/* Customer & Status Section */}
+					<View style={styles.middleSection}>
+						<View style={[styles.grandBadge, { backgroundColor: status.bg }]}>
+							<View style={[styles.iconCircle, { backgroundColor: status.color + '20' }]}>
+								<MaterialCommunityIcons name={status.icon as any} size={22} color={status.color} />
 							</View>
-							<Text style={styles.foodName} numberOfLines={1}>
-								{food.name || food.item_name || `Mahsulot #${index + 1}`}
+							<View>
+								<Text style={[styles.grandBadgeTitle, { color: status.color }]}>Holati:</Text>
+								<Text style={[styles.grandBadgeText, { color: status.color }]}>{status.label}</Text>
+							</View>
+						</View>
+
+						<View style={styles.customerBrief}>
+							<MaterialCommunityIcons name={item.order_type === 'delivery' ? 'moped' : 'storefront-outline'} size={24} color='#1C1917' />
+							<Text style={styles.customerName} numberOfLines={1}>{item.customer_name || 'Mijoz'}</Text>
+						</View>
+					</View>
+
+					{/* Items Summary Pill list */}
+					<View style={styles.fancyItemsWrapper}>
+						{items.slice(0, 2).map((food: any, index: number) => (
+							<View key={index} style={styles.itemPill}>
+								<Text style={styles.itemPillQty}>{food.quantity || 1}×</Text>
+								<Text style={styles.itemPillName} numberOfLines={1}>
+									{food.name || food.item_name || `Mahsulot`}
+								</Text>
+							</View>
+						))}
+						{items.length > 2 && (
+							<View style={[styles.itemPill, { backgroundColor: '#F5F5F4' }]}>
+								<Text style={styles.morePillText}>+{items.length - 2}</Text>
+							</View>
+						)}
+					</View>
+
+					{/* Card Footer: Price */}
+					<View style={styles.creativeFooter}>
+						<Text style={styles.footerLabel}>Umumiy narx</Text>
+						<View style={styles.priceTag}>
+							<Text style={styles.priceTagText}>
+								{(item.total_amount || 0).toLocaleString('uz-UZ')} so'm
 							</Text>
 						</View>
-					))}
-
-					{items.length > 3 ? (
-						<Text style={styles.moreItems}>
-							+{items.length - 3} ta mahsulot
-						</Text>
-					) : null}
-				</View>
-
-				<View style={styles.cardFooter}>
-					<Text style={styles.totalLabel}>Jami</Text>
-					<Text style={styles.totalPrice}>
-						{(item.total_amount || 0).toLocaleString('uz-UZ')} so'm
-					</Text>
+					</View>
 				</View>
 			</TouchableOpacity>
 		)
@@ -321,127 +296,143 @@ const OrdersScreen = () => {
 }
 
 const styles = StyleSheet.create({
-	safeArea: { flex: 1, backgroundColor: '#FAFAFA' },
+	safeArea: { flex: 1, backgroundColor: '#FAF8F5' }, // Very warm background
 	header: {
-		paddingHorizontal: 20,
-		backgroundColor: '#FFF',
-		borderBottomLeftRadius: 30,
-		borderBottomRightRadius: 30,
-		elevation: 4,
-		shadowColor: MAIN_RED,
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.1,
-		shadowRadius: 10,
+		paddingHorizontal: 24,
+		backgroundColor: '#FFFFFF',
+		borderBottomLeftRadius: 40,
+		borderBottomRightRadius: 40,
+		elevation: 12,
+		shadowColor: '#1C1917',
+		shadowOffset: { width: 0, height: 10 },
+		shadowOpacity: 0.05,
+		shadowRadius: 20,
 	},
 	headerTop: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'flex-start',
+		marginBottom: 10,
 	},
-	headerTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
-	headerSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-	deviceIdText: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
+	headerTitle: { fontSize: 26, fontWeight: '900', color: '#1C1917', letterSpacing: -0.5 },
+	headerSubtitle: { fontSize: 14, color: '#78716C', marginTop: 2, fontWeight: '500' },
+	deviceIdText: { fontSize: 11, color: '#D6D3D1', marginTop: 6, fontStyle: 'italic' },
 	container: { flex: 1 },
-	listContent: { padding: 16, paddingBottom: 40 },
+	listContent: { padding: 20, paddingBottom: 40, gap: 20 },
+	
 	card: {
-		backgroundColor: '#FFF',
+		backgroundColor: '#FFFFFF',
 		borderRadius: 24,
-		padding: 16,
-		marginBottom: 16,
+		flexDirection: 'row',
+		overflow: 'hidden',
+		shadowColor: '#1C1917',
+		shadowOffset: { width: 0, height: 12 },
+		shadowOpacity: 0.06,
+		shadowRadius: 25,
+		elevation: 6,
 		borderWidth: 1,
-		borderColor: '#F3F4F6',
-		elevation: 2,
+		borderColor: 'rgba(0,0,0,0.02)',
 	},
-	cardHeader: {
+	statusStrip: {
+		width: 10,
+		height: '100%',
+	},
+	cardInner: {
+		flex: 1,
+		padding: 20,
+	},
+	cardHeaderRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'flex-start',
+	},
+	orderIdTitle: { fontSize: 11, fontWeight: '800', color: '#A8A29E', textTransform: 'uppercase', letterSpacing: 1 },
+	orderId: { fontSize: 20, fontWeight: '900', color: '#1C1917', marginTop: 2 },
+	dateCol: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FAF7F5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+	dateText: { fontSize: 12, color: '#78716C', fontWeight: '700' },
+	
+	dividerDashed: { height: 1, backgroundColor: '#E7E5E4', marginVertical: 18 },
+	
+	middleSection: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
+		gap: 12,
 	},
-	idContainer: { flexDirection: 'row', alignItems: 'center' },
-	orderIconBox: {
-		width: 32,
-		height: 32,
-		backgroundColor: MAIN_RED + '10',
-		borderRadius: 8,
-		justifyContent: 'center',
-		alignItems: 'center',
-		marginRight: 10,
-	},
-	orderId: { fontSize: 14, fontWeight: '700', color: '#111827' },
-	timeText: { fontSize: 11, color: '#9CA3AF' },
-	statusBadge: {
+	grandBadge: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 10,
+		paddingRight: 16,
+		paddingVertical: 6,
+		paddingLeft: 6,
+		borderRadius: 100, // Pill shape
+		gap: 10,
+		flex: 1,
 	},
-	statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-	statusText: { fontSize: 11, fontWeight: '700' },
-	divider: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 12 },
-	customerBox: { flexDirection: 'row', alignItems: 'center' },
-	avatar: {
-		width: 40,
-		height: 40,
-		borderRadius: 10,
-		justifyContent: 'center',
+	iconCircle: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
 		alignItems: 'center',
+		justifyContent: 'center',
 	},
-	avatarText: { fontSize: 16, fontWeight: 'bold' },
-	customerDetails: { flex: 1, marginLeft: 12 },
-	customerName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-	customerPhone: { fontSize: 12, color: '#6B7280' },
-	typeBadge: {
-		backgroundColor: '#F9FAFB',
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: '#E5E7EB',
+	grandBadgeTitle: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
+	grandBadgeText: { fontSize: 14, fontWeight: '900' },
+
+	customerBrief: {
+		alignItems: 'center',
+		paddingHorizontal: 12,
+		maxWidth: '35%',
 	},
-	typeText: { fontSize: 10, color: '#374151', fontWeight: '700' },
-	tableIndicator: {
-		marginTop: 10,
-		backgroundColor: MAIN_RED + '08',
-		padding: 6,
-		borderRadius: 8,
-		alignSelf: 'flex-start',
+	customerName: { fontSize: 12, fontWeight: '800', color: '#44403C', marginTop: 4, textAlign: 'center' },
+
+	fancyItemsWrapper: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		gap: 8,
+		marginTop: 18,
+	},
+	itemPill: {
 		flexDirection: 'row',
 		alignItems: 'center',
-		gap: 4,
+		backgroundColor: '#FFF0F0',
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		borderRadius: 12,
+		gap: 6,
+		maxWidth: '100%',
 	},
-	tableText: { fontSize: 11, color: MAIN_RED, fontWeight: '700' },
-	itemsList: { marginTop: 12 },
-	foodRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-	qtyBox: {
-		backgroundColor: '#F3F4F6',
-		paddingHorizontal: 6,
-		paddingVertical: 2,
-		borderRadius: 4,
-		marginRight: 10,
-	},
-	qtyText: { fontSize: 11, fontWeight: '700', color: '#4B5563' },
-	foodName: { fontSize: 13, color: '#374151', fontWeight: '500', flex: 1 },
-	moreItems: {
-		fontSize: 11,
-		color: '#9CA3AF',
-		fontStyle: 'italic',
-		marginTop: 4,
-	},
-	cardFooter: {
+	itemPillQty: { fontSize: 13, fontWeight: '900', color: MAIN_RED },
+	itemPillName: { fontSize: 13, fontWeight: '700', color: '#44403C', maxWidth: 120 },
+	morePillText: { fontSize: 13, fontWeight: '800', color: '#A8A29E' },
+
+	creativeFooter: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		marginTop: 12,
-		paddingTop: 12,
+		marginTop: 20,
+		paddingTop: 16,
 		borderTopWidth: 1,
-		borderTopColor: '#F3F4F6',
+		borderTopColor: '#F5F5F4',
+		borderStyle: 'dashed', // Creative touch
 	},
-	totalLabel: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
-	totalPrice: { fontSize: 16, fontWeight: '800', color: MAIN_RED },
+	footerLabel: { fontSize: 14, color: '#78716C', fontWeight: '800' },
+	priceTag: {
+		backgroundColor: MAIN_RED,
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		borderRadius: 16,
+		shadowColor: MAIN_RED,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+		elevation: 4,
+	},
+	priceTagText: { fontSize: 16, fontWeight: '900', color: '#FFFFFF' },
+
 	center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 	emptyBox: { marginTop: 80, alignItems: 'center' },
-	emptyText: { color: '#9CA3AF', fontSize: 14, marginTop: 10 },
+	emptyText: { color: '#A8A29E', fontSize: 16, marginTop: 14, fontWeight: '800' },
 })
 
 export default OrdersScreen
