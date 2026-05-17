@@ -11,6 +11,7 @@ import { CourierLocationProvider } from './src/context/CourierLocationContext'
 import { OrderProvider } from './src/context/OrderContext'
 import './src/global.css'
 import AppNavigator from './src/navigation/AppNavigator'
+import { usePushNotifications } from './src/hooks/usePushNotifications'
 
 console.log("🚀 [APP STARTED] Global scope initialized");
 
@@ -55,6 +56,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 // Inner component to access auth context
 const AppContent = () => {
 	const { user } = useAuth()
+	const { expoPushToken } = usePushNotifications()
+
+	useEffect(() => {
+		if (expoPushToken) {
+			console.log("📲 Your push token is:", expoPushToken.data);
+			// Bu yerda tokenni ma'lumotlar bazasiga (Supabase) saqlash kodi qo'shilishi mumkin
+		}
+	}, [expoPushToken]);
 	
 	return (
 		<CourierLocationProvider courierId={user?.id || ''}>

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCart } from '../context/CartContext'
 import { useOrder } from '../context/OrderContext'
 
-const MAIN_RED = '#FF4747' // Vibrantly appetizing red
+const MAIN_RED = '#E63946' // Vibrantly appetizing red
 
 const CartScreen = () => {
 	const { cartItems, addToCart, removeFromCart, clearCart, getTotalPrice } =

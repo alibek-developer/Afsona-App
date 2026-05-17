@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Order } from '../hooks/useRealtimeOrders'
 import { supabase } from '../lib/supabase'
 
-const MAIN_RED = '#FF4747'
+const MAIN_RED = '#E63946'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 

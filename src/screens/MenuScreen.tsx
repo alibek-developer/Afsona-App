@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native'
-import { Calendar, ChevronRight, Search, ShoppingCart } from 'lucide-react-native'; // Calendar va ChevronRight qo'shildi
+import { ChevronRight, Search, ShoppingCart } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Dimensions,
   ImageBackground,
+  LayoutAnimation,
   Platform,
   RefreshControl,
   StatusBar as RNStatusBar,
@@ -14,6 +15,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native'
 
@@ -29,16 +31,19 @@ import {
   MenuItem,
 } from '../services/api'
 
-const { width } = Dimensions.get('window')
-const MAIN_RED = '#FF0000'
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-const MenuScreen = () => {
+const { width } = Dimensions.get('window')
+const MAIN_RED = '#E63946'
+
+function MenuScreen() {
   const navigation = useNavigation<any>()
   const { cartItems } = useCart()
 
   const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategoryName, setSelectedCategoryName] =
-    useState<string>('all')
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [foodItems, setFoodItems] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,7 +61,7 @@ const MenuScreen = () => {
       setCategories(categoriesData)
       setBanners(bannersData)
       await fetchMenuItems(
-        selectedCategoryName === 'all' ? undefined : selectedCategoryName,
+        selectedCategoryName === 'all' ? undefined : selectedCategoryName
       )
     } catch (error) {
       console.error('Data loading error:', error)
@@ -90,7 +95,7 @@ const MenuScreen = () => {
   useEffect(() => {
     if (!categoriesLoading) {
       fetchMenuItems(
-        selectedCategoryName === 'all' ? undefined : selectedCategoryName,
+        selectedCategoryName === 'all' ? undefined : selectedCategoryName
       )
     }
   }, [selectedCategoryName])
@@ -132,25 +137,21 @@ const MenuScreen = () => {
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor='#A1A1AA'
-            style={styles.searchInput}
-          />
+            style={styles.searchInput} />
         </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={MAIN_RED}
-          />
-        }
+        refreshControl={<RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={MAIN_RED} />}
       >
-        
+
         {/* --- XONA BRON QILISH TUGMASI (YANGILANGAN) --- */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.bookingBanner}
           activeOpacity={0.9}
           onPress={() => navigation.navigate('Booking')}
@@ -178,8 +179,8 @@ const MenuScreen = () => {
         {/* BUGUNGI TAKLIFLAR (COMBO) (YANGILANGAN) */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderLine}>
-             <Text style={styles.sectionTitle}>Maxsus takliflar</Text>
-             <MaterialCommunityIcons name="fire" size={24} color="#EF4444" />
+            <Text style={styles.sectionTitle}>Maxsus takliflar</Text>
+            <MaterialCommunityIcons name="fire" size={24} color={MAIN_RED} />
           </View>
           <ScrollView
             horizontal
@@ -216,7 +217,7 @@ const MenuScreen = () => {
 
         {/* BO'LIMLAR (CATEGORIES) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Menyu</Text>
+          <Text style={styles.sectionTitle2}>Menyu</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -225,15 +226,19 @@ const MenuScreen = () => {
             <CategoryItem
               name='Hammasi'
               isActive={selectedCategoryName === 'all'}
-              onPress={() => setSelectedCategoryName('all')}
-            />
+              onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+                setSelectedCategoryName('all')
+              } } />
             {(categories || []).map(cat => (
               <CategoryItem
                 key={cat.id}
                 name={cat.name}
                 isActive={selectedCategoryName === cat.name}
-                onPress={() => setSelectedCategoryName(cat.name)}
-              />
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+                  setSelectedCategoryName(cat.name)
+                } } />
             ))}
           </ScrollView>
         </View>
@@ -247,7 +252,7 @@ const MenuScreen = () => {
                 : selectedCategoryName}
             </Text>
             <View style={styles.countBadge}>
-               <Text style={styles.countText}>{(filteredData?.length || 0)}</Text>
+              <Text style={styles.countText}>{(filteredData?.length || 0)}</Text>
             </View>
           </View>
 
@@ -255,8 +260,7 @@ const MenuScreen = () => {
             <ActivityIndicator
               size='large'
               color={MAIN_RED}
-              style={{ marginTop: 40 }}
-            />
+              style={{ marginTop: 40 }} />
           ) : (
             <View style={styles.foodGrid}>
               {filteredData.length > 0 ? (
@@ -298,7 +302,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   welcomeText: {
     fontSize: 14,
@@ -344,8 +348,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F4F4F5',
     paddingHorizontal: 15,
-    height: 48,
-    borderRadius: 14,
+    height: 44,
+    borderRadius: 12,
   },
   searchInput: {
     flex: 1,
@@ -363,8 +367,8 @@ const styles = StyleSheet.create({
   // --- YANGILANGAN BRON QILISH BANNERI ---
   bookingBanner: {
     marginHorizontal: 20,
-    marginTop: 10,
-    borderRadius: 16,
+    marginTop: 8,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -373,7 +377,7 @@ const styles = StyleSheet.create({
   },
   bookingBg: {
     width: '100%',
-    height: 90,
+    height: 80,
     justifyContent: 'center',
   },
   bookingOverlay: {
@@ -415,19 +419,26 @@ const styles = StyleSheet.create({
   // ----------------------------------------
 
   section: {
-    marginTop: 20,
+    marginTop: 16,
   },
   sectionHeaderLine: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 10,
+    marginBottom: 8,
     gap: 6,
   },
   sectionTitle: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '800',
     color: '#111827',
+
+  },
+  sectionTitle2: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginLeft: 23,
   },
   horizontalScroll: {
     paddingLeft: 20,
@@ -438,10 +449,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   comboCard: {
-    marginRight: 16,
-    width: width * 0.75,
-    height: 190,
-    borderRadius: 28,
+    marginRight: 14,
+    width: width * 0.72,
+    height: 160,
+    borderRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
@@ -454,10 +465,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   comboGradient: {
-    padding: 20,
+    padding: 16,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
@@ -484,7 +495,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   countBadge: {
     backgroundColor: '#F3F4F6',
@@ -504,8 +515,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   foodCardWrapper: {
-    width: '48%',
-    marginBottom: 16,
+    width: '48.5%',
+    marginBottom: 12,
   },
   emptyResults: {
     flex: 1,

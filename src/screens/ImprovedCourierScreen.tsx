@@ -1,24 +1,24 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { StatusBar } from 'expo-status-bar'
+import { useState } from 'react'
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Platform,
-    RefreshControl,
-    StatusBar as RNStatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
-import OrderCard from '../components/OrderCard';
-import { useAuth } from '../context/AuthContext';
-import { useOrders } from '../hooks/useOrders';
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Platform,
+  RefreshControl,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import Toast from 'react-native-toast-message'
+import OrderCard from '../components/OrderCard'
+import { useAuth } from '../context/AuthContext'
+import { useOrders } from '../hooks/useOrders'
 
 const { width } = Dimensions.get('window');
 

@@ -3,7 +3,8 @@ import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useCart } from '../context/CartContext'
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.46; // Kengaytirildi: 0.43 -> 0.46
+
+const PRIMARY_RED = '#E63946';
 
 export const FoodCard = ({ item }: { item: any }) => {
   const { addToCart, cartItems } = useCart();
@@ -14,9 +15,8 @@ export const FoodCard = ({ item }: { item: any }) => {
   const handleAddToCart = () => addToCart({ ...item, image: imageSource });
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.95}>
-      {/* === IMAGE === */}
-      <View style={styles.imageContainer}>
+    <View style={styles.card}>
+      <TouchableOpacity style={styles.imageContainer} activeOpacity={0.9} onPress={handleAddToCart}>
         <Image
           source={{ uri: imageSource || 'https://via.placeholder.com/200' }}
           style={styles.image}
@@ -28,7 +28,7 @@ export const FoodCard = ({ item }: { item: any }) => {
         <View style={styles.badges}>
           {item.is_hit && (
             <View style={[styles.badge, styles.hit]}>
-              <MaterialCommunityIcons name="fire" size={11} color="white" />
+              <MaterialCommunityIcons name="fire" size={12} color="white" />
               <Text style={styles.badgeText}>HIT</Text>
             </View>
           )}
@@ -38,117 +38,117 @@ export const FoodCard = ({ item }: { item: any }) => {
             </View>
           )}
         </View>
-      </View>
 
-      {/* === CONTENT === */}
+        {/* Action Button over Image */}
+        <TouchableOpacity 
+          style={[styles.addBtn, quantity > 0 && styles.addBtnActive]} 
+          onPress={handleAddToCart}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons 
+             name={quantity > 0 ? "cart-check" : "plus"} 
+             size={20} 
+             color={quantity > 0 ? "white" : "#111827"} 
+          />
+        </TouchableOpacity>
+      </TouchableOpacity>
+
+      {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.desc} numberOfLines={1}>
-          {item.description || 'Mazali va to\'yimli taom'}
+          {item.description || "Ta'rifi yo'q"}
         </Text>
 
-        {/* === PRICE SECTION === */}
         <View style={styles.priceSection}>
-          <View style={styles.priceGroup}>
-            {item.old_price && (
-              <Text style={styles.oldPrice}>{item.old_price?.toLocaleString()} so'm</Text>
-            )}
-            <View style={styles.priceTag}>
-              <Text style={styles.price}>{item.price?.toLocaleString()}</Text>
-              <Text style={styles.currency}> so'm</Text>
-            </View>
+          {item.old_price && (
+            <Text style={styles.oldPrice}>{item.old_price?.toLocaleString()} so'm</Text>
+          )}
+          <View style={styles.priceTag}>
+            <Text style={styles.price}>{item.price?.toLocaleString()}</Text>
+            <Text style={styles.currency}> sum</Text>
           </View>
-
-          {/* === ACTION (IXCHAM TUGMA) === */}
-          <TouchableOpacity 
-            style={[styles.addBtn, quantity > 0 && styles.addBtnActive]} 
-            onPress={handleAddToCart}
-            activeOpacity={0.8}
-          >
-            <MaterialCommunityIcons 
-              name={quantity > 0 ? "cart-check" : "plus"} 
-              size={18} 
-              color="white" 
-            />
-          </TouchableOpacity>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     width: '100%', 
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-    overflow: 'hidden',
+    marginBottom: 8,
   },
-
-  // === IMAGE ===
   imageContainer: {
     width: '100%',
-    height: 120,
-    backgroundColor: '#F8FAFC',
+    height: 160,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 24,
     position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    elevation: 4,
   },
   image: { width: '100%', height: '100%' },
   imageGradient: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
-    height: 40,
-    backgroundColor: 'rgba(0,0,0,0.15)',
+    height: 60,
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
-
-  // === BADGES ===
   badges: {
     position: 'absolute',
-    top: 8, left: 8, right: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    top: 12, left: 12,
+    flexDirection: 'column',
+    gap: 6,
     zIndex: 2,
   },
   badge: {
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderRadius: 6,
-    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
   },
-  hit: { backgroundColor: '#EF4444' },
-  discount: { backgroundColor: '#10B981', position: 'absolute', right: 0 },
-  badgeText: { color: 'white', fontSize: 8, fontWeight: '800' },
+  hit: { backgroundColor: PRIMARY_RED },
+  discount: { backgroundColor: '#10B981' },
+  badgeText: { color: 'white', fontSize: 10, fontWeight: '800' },
+  
+  addBtn: {
+    position: 'absolute',
+    bottom: 12, right: 12,
+    width: 38,
+    height: 38,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  addBtnActive: {
+    backgroundColor: '#10B981',
+  },
 
-  // === CONTENT ===
-  content: { padding: 10, paddingTop: 10 },
+  content: { paddingHorizontal: 4, paddingTop: 12 },
   name: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#111827',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   desc: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 8,
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 6,
   },
-
-  // === PRICE SECTION ===
   priceSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  priceGroup: { 
-    flex: 1,
-    paddingRight: 5,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   oldPrice: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#9CA3AF',
     textDecorationLine: 'line-through',
   },
@@ -157,32 +157,13 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   price: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#111827', 
+    fontSize: 16,
+    fontWeight: '900',
+    color: PRIMARY_RED, 
   },
   currency: {
-    fontSize: 10,
-    color: '#64748B',
-    fontWeight: '600',
-  },
-
-  // === BUTTONS (IXCHAM) ===
-  addBtn: {
-    width: 34,
-    height: 34,
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  addBtnActive: {
-    backgroundColor: '#10B981', // Qo'shilganda yashil rangga o'tadi
-    shadowColor: '#10B981',
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '700',
   },
 });

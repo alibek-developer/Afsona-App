@@ -21,7 +21,7 @@ import {
 } from '../hooks/useRealtimeOrders'
 import { getOrCreateDeviceId } from '../lib/auth'
 
-const MAIN_RED = '#FF4747'
+const MAIN_RED = '#E63946'
 
 const OrdersScreen = () => {
 	const navigation = useNavigation<any>()

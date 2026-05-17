@@ -31,7 +31,7 @@ import {
 	formatPrice,
 } from '../lib/utils'
 
-const MAIN_RED = '#FF4747'
+const MAIN_RED = '#E63946'
 
 const CheckoutScreen = () => {
 	const { cartItems, getTotalPrice, clearCart } = useCart()

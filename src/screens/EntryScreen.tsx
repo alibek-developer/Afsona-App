@@ -2,6 +2,7 @@ import { NavigationProp, useNavigation } from '@react-navigation/native'
 import React from 'react'
 import {
 	Dimensions,
+	Image,
 	Platform,
 	SafeAreaView,
 	StatusBar,
@@ -11,15 +12,17 @@ import {
 	View,
 } from 'react-native'
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-// 🔹 Navigation tipi
 type RootStackParamList = {
 	Main: { mode: 'dine-in' | 'delivery' };
 };
 type Navigation = NavigationProp<RootStackParamList>;
 
-const MAIN_RED = '#FF4747';
+// Premium Colors
+const PRIMARY_RED = '#E63946';
+const DARK_BG = '#111827';
+const LIGHT_BG = '#F9FAFB';
 
 const EntryScreen: React.FC = () => {
 	const navigation = useNavigation<Navigation>();
@@ -29,222 +32,236 @@ const EntryScreen: React.FC = () => {
 	};
 
 	return (
-		<SafeAreaView style={styles.container}>
-			<StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+		<View style={styles.container}>
+			<StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-			{/* Sokin fonga nisbatan orqa ko'rinish */}
-			<View style={styles.backgroundAccent} />
-
-			<View style={styles.content}>
-				{/* 🏷️ Header & Logo */}
-				<View style={styles.header}>
-					<View style={styles.logoBadge}>
-						<Text style={styles.logoText}>🔥</Text>
+			{/* Hero Section */}
+			<View style={styles.heroSection}>
+				<Image 
+					source={{ uri: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1000&auto=format&fit=crop' }} 
+					style={styles.heroImage}
+				/>
+				<View style={styles.overlay} />
+				<SafeAreaView style={styles.heroSafeArea}>
+					<View style={styles.heroContent}>
+						<View style={styles.logoBadge}>
+							<Text style={styles.logoText}>A</Text>
+						</View>
+						<Text style={styles.title}>Afsona</Text>
+						<Text style={styles.subtitle}>PREMIUM RESTAURANT</Text>
 					</View>
-					<Text style={styles.title}>Afsona</Text>
-					<Text style={styles.subtitle}>Premium Restoran</Text>
-					<Text style={styles.question}>Bugun qanday buyurtma qilamiz?</Text>
-				</View>
+				</SafeAreaView>
+			</View>
 
-				{/* 📦 Tanlash kartochkalari */}
+			{/* Bottom Content */}
+			<View style={styles.bottomSection}>
+				<View style={styles.handleBar} />
+				<Text style={styles.question}>Bugun nima xohlaysiz?</Text>
+				<Text style={styles.desc}>Eng sarxil taomlar va yuqori darajadagi xizmatdan bahramand bo'ling</Text>
+
 				<View style={styles.cardStack}>
-					{/* Yetkazib berish (Asosiy action) */}
+					{/* Delivery Card */}
 					<TouchableOpacity
 						style={[styles.card, styles.primaryCard]}
 						onPress={() => handleModeSelect('delivery')}
-						activeOpacity={0.9}
+						activeOpacity={0.85}
 					>
 						<View style={styles.cardRow}>
-							<View style={[styles.cardIconBox, styles.primaryIconBox]}>
-								<Text style={styles.primaryIcon}>🛵</Text>
+							<View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+								<Text style={{ fontSize: 24 }}>🛵</Text>
 							</View>
 							<View style={styles.cardInfo}>
-								<Text style={[styles.cardTitle, styles.primaryTitle]}>Yetkazib berish</Text>
-								<Text style={[styles.cardDesc, styles.primaryDesc]}>Issiqqina uyingizgacha</Text>
+								<Text style={[styles.cardTitle, { color: '#FFF' }]}>Yetkazib berish</Text>
+								<Text style={[styles.cardSub, { color: 'rgba(255,255,255,0.8)' }]}>Uyga yoki ofisga</Text>
 							</View>
-							<View style={styles.arrowBoxLight}>
-								<Text style={[styles.cardArrow, styles.primaryArrow]}>›</Text>
+							<View style={styles.arrowBoxDark}>
+								<Text style={[styles.cardArrow, { color: '#FFF' }]}>›</Text>
 							</View>
 						</View>
 					</TouchableOpacity>
 
-					{/* Restoran ichida */}
+					{/* Dine-in Card */}
 					<TouchableOpacity
-						style={styles.card}
+						style={[styles.card, styles.secondaryCard]}
 						onPress={() => handleModeSelect('dine-in')}
 						activeOpacity={0.85}
 					>
 						<View style={styles.cardRow}>
-							<View style={styles.cardIconBox}>
-								<Text style={styles.cardIcon}>🍽</Text>
+							<View style={[styles.iconBox, { backgroundColor: '#F3F4F6' }]}>
+								<Text style={{ fontSize: 24 }}>🍽</Text>
 							</View>
 							<View style={styles.cardInfo}>
-								<Text style={styles.cardTitle}>Restoran ichida</Text>
-								<Text style={styles.cardDesc}>Stolingizga xizmat qilamiz</Text>
+								<Text style={[styles.cardTitle, { color: '#111827' }]}>Restoranda</Text>
+								<Text style={[styles.cardSub, { color: '#6B7280' }]}>Stol band qilish</Text>
 							</View>
-							<View style={styles.arrowBoxDark}>
+							<View style={styles.arrowBoxLight}>
 								<Text style={styles.cardArrow}>›</Text>
 							</View>
 						</View>
 					</TouchableOpacity>
 				</View>
-
-				{/* 🔻 Footer */}
-				<Text style={styles.footer}>
-					Xush kelibsiz! Har bir detalliga mehr berilgan.
-				</Text>
 			</View>
-		</SafeAreaView>
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: '#FDFCFB',
+		backgroundColor: DARK_BG,
 	},
-	backgroundAccent: {
+	heroSection: {
+		height: height * 0.55,
+		width: '100%',
+		position: 'relative',
+	},
+	heroImage: {
+		width: '100%',
+		height: '100%',
 		position: 'absolute',
-		top: -150,
-		left: -50,
-		width: width * 1.5,
-		height: width * 1.5,
-		borderRadius: width * 0.75,
-		backgroundColor: '#FFF0F0',
-		opacity: 0.8,
 	},
-	content: {
+	overlay: {
+		...StyleSheet.absoluteFillObject,
+		backgroundColor: 'rgba(0,0,0,0.4)',
+	},
+	heroSafeArea: {
 		flex: 1,
-		paddingHorizontal: 24,
-		justifyContent: 'center',
-		paddingBottom: 20,
 	},
-	header: {
+	heroContent: {
+		flex: 1,
 		alignItems: 'center',
-		marginBottom: 48,
+		justifyContent: 'center',
+		paddingTop: Platform.OS === 'android' ? 40 : 0,
 	},
 	logoBadge: {
-		width: 80,
-		height: 80,
-		borderRadius: 40,
-		backgroundColor: MAIN_RED,
+		width: 70,
+		height: 70,
+		borderRadius: 35,
+		backgroundColor: PRIMARY_RED,
 		justifyContent: 'center',
 		alignItems: 'center',
-		shadowColor: MAIN_RED,
-		shadowOffset: { width: 0, height: 10 },
-		shadowOpacity: 0.3,
-		shadowRadius: 15,
-		elevation: 8,
-		marginBottom: 20,
+		marginBottom: 16,
+		borderWidth: 2,
+		borderColor: 'rgba(255,255,255,0.3)',
 	},
 	logoText: {
-		fontSize: 36,
-	},
-	title: {
 		fontSize: 32,
 		fontWeight: '900',
-		color: '#1C1917',
-		letterSpacing: -0.5,
-		marginBottom: 2,
+		color: '#FFF',
+		fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+	},
+	title: {
+		fontSize: 42,
+		fontWeight: '900',
+		color: '#FFF',
+		letterSpacing: 1,
+		marginBottom: 4,
 	},
 	subtitle: {
-		fontSize: 15,
-		color: '#A8A29E',
+		fontSize: 12,
 		fontWeight: '800',
-		letterSpacing: 2,
-		textTransform: 'uppercase',
+		color: 'rgba(255,255,255,0.8)',
+		letterSpacing: 4,
+	},
+	bottomSection: {
+		flex: 1,
+		backgroundColor: LIGHT_BG,
+		marginTop: -30,
+		borderTopLeftRadius: 32,
+		borderTopRightRadius: 32,
+		paddingHorizontal: 24,
+		paddingTop: 16,
+		alignItems: 'center',
+	},
+	handleBar: {
+		width: 40,
+		height: 5,
+		borderRadius: 3,
+		backgroundColor: '#E5E7EB',
 		marginBottom: 24,
 	},
 	question: {
-		fontSize: 20,
+		fontSize: 24,
 		fontWeight: '800',
-		color: '#1C1917',
+		color: '#111827',
+		marginBottom: 8,
 		textAlign: 'center',
 	},
+	desc: {
+		fontSize: 14,
+		color: '#6B7280',
+		textAlign: 'center',
+		marginBottom: 32,
+		lineHeight: 20,
+		paddingHorizontal: 20,
+	},
 	cardStack: {
-		gap: 20,
+		width: '100%',
+		gap: 16,
 	},
 	card: {
-		backgroundColor: '#FFFFFF',
-		borderRadius: 36,
-		padding: 12,
-		shadowColor: '#1C1917',
-		shadowOffset: { width: 0, height: 12 },
-		shadowOpacity: 0.04,
-		shadowRadius: 20,
+		width: '100%',
+		borderRadius: 24,
+		padding: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.1,
+		shadowRadius: 12,
 		elevation: 5,
-		borderWidth: 1,
-		borderColor: 'rgba(0,0,0,0.02)',
 	},
 	primaryCard: {
-		backgroundColor: MAIN_RED,
-		shadowColor: MAIN_RED,
-		shadowOpacity: 0.25,
+		backgroundColor: PRIMARY_RED,
+	},
+	secondaryCard: {
+		backgroundColor: '#FFF',
+		borderWidth: 1,
+		borderColor: '#F3F4F6',
 	},
 	cardRow: {
 		flexDirection: 'row',
 		alignItems: 'center',
 	},
-	cardIconBox: {
-		width: 60,
-		height: 60,
-		borderRadius: 24,
-		backgroundColor: '#F5F5F4',
+	iconBox: {
+		width: 64,
+		height: 64,
+		borderRadius: 20,
 		justifyContent: 'center',
 		alignItems: 'center',
 		marginRight: 16,
 	},
-	primaryIconBox: {
-		backgroundColor: 'rgba(255,255,255,0.2)',
+	cardInfo: {
+		flex: 1,
 	},
-	cardIcon: { fontSize: 26 },
-	primaryIcon: { fontSize: 26 },
-	cardInfo: { flex: 1 },
 	cardTitle: {
 		fontSize: 18,
 		fontWeight: '800',
-		color: '#1C1917',
 		marginBottom: 4,
 	},
-	primaryTitle: { color: '#FFFFFF' },
-	cardDesc: {
+	cardSub: {
 		fontSize: 13,
-		color: '#78716C',
 		fontWeight: '600',
 	},
-	primaryDesc: { color: 'rgba(255,255,255,0.9)' },
 	arrowBoxDark: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: '#FAF7F5',
-		alignItems: 'center',
-		justifyContent: 'center',
-		marginRight: 6,
-	},
-	arrowBoxLight: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		backgroundColor: 'rgba(255,255,255,0.2)',
 		alignItems: 'center',
 		justifyContent: 'center',
-		marginRight: 6,
+	},
+	arrowBoxLight: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: '#F9FAFB',
+		alignItems: 'center',
+		justifyContent: 'center',
 	},
 	cardArrow: {
 		fontSize: 24,
 		color: '#A8A29E',
 		fontWeight: '600',
 		marginTop: -4,
-	},
-	primaryArrow: { color: '#FFFFFF' },
-	footer: {
-		textAlign: 'center',
-		fontSize: 13,
-		color: '#A8A29E',
-		marginTop: 'auto',
-		marginBottom: Platform.OS === 'ios' ? 10 : 20,
-		fontWeight: '700',
 	},
 });
 

@@ -6,7 +6,7 @@ interface Props {
   onPress: () => void
 }
 
-const MAIN_YELLOW = '#FF0000'
+const PRIMARY_RED = '#E63946'
 
 export const CategoryItem = ({ name, isActive, onPress }: Props) => {
   return (
@@ -16,8 +16,6 @@ export const CategoryItem = ({ name, isActive, onPress }: Props) => {
       style={[
         styles.button,
         isActive ? styles.activeButton : styles.inactiveButton,
-        // Android uchun soya mantiig'i
-        isActive && Platform.OS === 'android' ? { elevation: 6 } : null
       ]}
     >
       <Text style={[
@@ -33,35 +31,36 @@ export const CategoryItem = ({ name, isActive, onPress }: Props) => {
 const styles = StyleSheet.create({
   button: {
     marginRight: 10,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 20, // Zamonaviy UI uchun biroz burchakliroq yumaloqlik
-    borderWidth: 0,   // Border o'rniga soya va rang bilan ajratamiz
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 80,
+    minWidth: 70,
   },
   activeButton: {
-    backgroundColor: MAIN_YELLOW,
-    // iOS uchun premium soya (shadow)
-    shadowColor: MAIN_YELLOW,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    backgroundColor: '#111827',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
   },
   inactiveButton: {
-    backgroundColor: '#F3F4F6', // Och kulrang fonda nofaol element yaxshi turadi
+    backgroundColor: '#FFFFFF', 
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   text: {
-    fontSize: 15,
-    letterSpacing: 0.3,
+    fontSize: 14,
+    letterSpacing: 0.2,
   },
   activeText: {
     color: '#FFFFFF',
-    fontWeight: '900', // Sariq fonda oq matn aniq ko'rinishi uchun eng qalin uslub
+    fontWeight: '800', 
   },
   inactiveText: {
-    color: '#9CA3AF',
+    color: '#6B7280',
     fontWeight: '600',
   },
 })

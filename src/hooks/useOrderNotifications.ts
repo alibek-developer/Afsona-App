@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Toast from 'react-native-toast-message';
+import * as Notifications from 'expo-notifications';
 import { Order, OrderStatus } from './useRealtimeOrders';
 
 // Status change messages
@@ -28,9 +29,26 @@ export const useOrderNotifications = () => {
     });
   }
 
-  // Schedule notification (now uses toast)
+  // Schedule notification (now uses toast and local push)
   const scheduleNotification = async (title: string, body: string, type: 'success' | 'error' | 'info' = 'info') => {
-    showToast(title, body, type);
+    // 1. Vaqtinchalik In-App oynasini o'chiramiz, asl Push qanday ishlashini ko'rish uchun:
+    // showToast(title, body, type);
+    
+    try {
+      console.log("🔔 OS bildirishnomasi jo'natilmoqda...", title, body);
+      // 2. Tizim (OS) bildirishnomasi (Tepadan tushadigan)
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: title,
+          body: body,
+          sound: true,
+        },
+        trigger: null, // trigger null bo'lsa, xuddi shu zahoti chiqadi
+      });
+      console.log("✅ OS bildirishnomasi muvaffaqiyatli jo'natildi!");
+    } catch (e) {
+      console.error("❌ OS bildirishnomasida xatolik:", e);
+    }
   }
 
   // Check for status changes and notify
