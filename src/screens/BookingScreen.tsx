@@ -117,6 +117,51 @@ const BookingScreen = () => {
   const [submitting, setSubmitting] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
 
+  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+
+  const checkVenueAvailability = async (venueId: string, dateStr: string) => {
+    try {
+      setCheckingAvailability(true);
+      const { data, error } = await supabase
+        .from('table_reservations')
+        .select('start_time')
+        .eq('table_id', venueId)
+        .eq('reservation_date', dateStr)
+        .neq('status', 'cancelled');
+
+      if (error) throw error;
+
+      const times = (data || []).map((res: any) => {
+        const parts = res.start_time.split(':');
+        return `${parts[0]}:${parts[1]}`;
+      });
+      setBookedTimes(times);
+    } catch (err) {
+      console.error('Error checking availability:', err);
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedVenue) {
+      const dateStr = daysData[selectedDayIndex].date.toISOString().split('T')[0];
+      checkVenueAvailability(selectedVenue.id, dateStr);
+    }
+  }, [selectedVenue, selectedDayIndex]);
+
+  useEffect(() => {
+    if (bookedTimes.includes(selectedTime)) {
+      const available = TIMES.find(t => !bookedTimes.includes(t));
+      if (available) {
+        setSelectedTime(available);
+      } else {
+        setSelectedTime("");
+      }
+    }
+  }, [bookedTimes]);
+
   // Animated Sheet values
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -154,9 +199,9 @@ const BookingScreen = () => {
 
       const mappedData: BookingVenue[] = (data || []).map((item: any) => {
         const lowerName = item.name.toLowerCase();
-        const type = lowerName.includes('vip') ? 'vip' :
-                     (lowerName.includes('terrasa') || lowerName.includes('terrace')) ? 'terrace' : 'hall';
-        const typeLabel = type === 'vip' ? 'VIP' : type === 'terrace' ? 'Terassa' : 'Zal';
+        const type = (lowerName.includes('vip') || lowerName.includes('xona')) ? 'vip' :
+                     (lowerName.includes('zal') || lowerName.includes('hall') || lowerName.includes('tantana') || lowerName.includes('marosim')) ? 'hall' : 'table';
+        const typeLabel = type === 'vip' ? 'Xona' : type === 'hall' ? 'Marosimlar Zali' : 'Stol';
 
         return {
           id: item.id,
@@ -165,7 +210,7 @@ const BookingScreen = () => {
           price_per_hour: item.price_per_hour || 0,
           image_url: item.image_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80',
           is_available: item.is_available ?? true,
-          description: item.description || (type === 'vip' ? 'Barcha sharoitlarga ega maxsus shinam xona' : 'Markaziy zalda joylashgan, yorug\' va qulay joy'),
+          description: item.description || (type === 'vip' ? 'Barcha sharoitlarga ega maxsus shinam xona' : type === 'hall' ? 'To\'y va katta marosimlar uchun mo\'ljallangan katta tantanalar zali' : 'Barcha qulayliklarga ega shinam stol'),
           type,
           typeLabel,
           floor: item.floor || 1,
@@ -183,33 +228,33 @@ const BookingScreen = () => {
             image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80',
             is_available: true,
             type: 'vip',
-            typeLabel: 'VIP',
+            typeLabel: 'Xona',
             floor: 1,
             description: 'Barcha sharoitlarga ega oilaviy VIP xona, televizor va ajoyib akustika',
             branch_id: defaultBranchId,
           },
           {
             id: 'r2',
-            name: 'Registon Zali',
-            capacity: 12,
+            name: 'Afsona Tantanalar Zali',
+            capacity: 150,
             price_per_hour: 250000,
             image_url: 'https://images.unsplash.com/photo-1592861956120-e524fc739696?auto=format&fit=crop&q=80',
             is_available: true,
             type: 'hall',
-            typeLabel: 'Zal',
+            typeLabel: 'Marosimlar Zali',
             floor: 1,
-            description: 'Katta guruhlar uchun mo\'ljallangan markaziy milliy zal',
+            description: 'To\'y, ma\'rakalar va katta marosimlar uchun mo\'ljallangan muhtasham tantanalar zali',
             branch_id: defaultBranchId,
           },
           {
             id: 'r3',
-            name: 'Bog\' Terassa',
+            name: 'Bog\' Terassa Stoli',
             capacity: 8,
             price_per_hour: 320000,
             image_url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80',
             is_available: true,
-            type: 'terrace',
-            typeLabel: 'Terassa',
+            type: 'table',
+            typeLabel: 'Stol',
             floor: 2,
             description: 'Ochiq osmon ostidagi salqin shabadali terassa stoli',
             branch_id: defaultBranchId,
@@ -222,7 +267,7 @@ const BookingScreen = () => {
             image_url: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80',
             is_available: true,
             type: 'vip',
-            typeLabel: 'VIP',
+            typeLabel: 'Xona',
             floor: 1,
             description: 'Haqiqiy sharqona uslubdagi premium darajadagi shinam xona',
             branch_id: defaultBranchId,
@@ -319,6 +364,25 @@ const BookingScreen = () => {
 
       const reservationDateStr = daysData[selectedDayIndex].date.toISOString().split('T')[0];
 
+      // Double check availability before final insert
+      const { data: doubleCheck, error: checkErr } = await supabase
+        .from('table_reservations')
+        .select('id')
+        .eq('table_id', selectedVenue?.id)
+        .eq('reservation_date', reservationDateStr)
+        .eq('start_time', `${selectedTime}:00`)
+        .neq('status', 'cancelled')
+        .limit(1);
+
+      if (checkErr) throw checkErr;
+
+      if (doubleCheck && doubleCheck.length > 0) {
+        Alert.alert('Band qilingan', 'Afsuski, ushbu vaqtda bu joy hozirgina boshqa mijoz tomonidan band qilindi. Iltimos, boshqa soat yoki kunni tanlang.');
+        checkVenueAvailability(selectedVenue!.id, reservationDateStr);
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase.from('table_reservations').insert([
         {
           table_id: selectedVenue?.id,
@@ -350,9 +414,8 @@ const BookingScreen = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    if (price === 0) return "Bepul (Buyurtma asosida)";
-    return new Intl.NumberFormat('uz-UZ').format(price) + " so'm";
+  const formatPrice = (price?: number) => {
+    return "Hisobning 10%i";
   };
 
   return (
@@ -376,9 +439,9 @@ const BookingScreen = () => {
         >
           {[
             { id: 'all', label: 'Barchasi' },
-            { id: 'vip', label: 'VIP Xonalar' },
-            { id: 'hall', label: 'Zal' },
-            { id: 'terrace', label: 'Terassa' },
+            { id: 'vip', label: 'Xonalar' },
+            { id: 'table', label: 'Stollar' },
+            { id: 'hall', label: 'Marosimlar Zali' },
           ].map((cat) => {
             const isActive = selectedCategory === cat.id;
             return (
@@ -558,14 +621,26 @@ const BookingScreen = () => {
                   <View style={styles.timesGrid}>
                     {TIMES.map((t) => {
                       const isSelected = t === selectedTime;
+                      const isBooked = bookedTimes.includes(t);
                       return (
                         <TouchableOpacity
                           key={t}
-                          style={[styles.timeChip, isSelected && styles.timeChipActive]}
+                          style={[
+                            styles.timeChip,
+                            isSelected && styles.timeChipActive,
+                            isBooked && styles.timeChipBooked
+                          ]}
+                          disabled={isBooked}
                           onPress={() => setSelectedTime(t)}
                           activeOpacity={0.8}
                         >
-                          <Text style={[styles.timeChipText, isSelected && styles.timeChipTextActive]}>
+                          <Text
+                            style={[
+                              styles.timeChipText,
+                              isSelected && styles.timeChipTextActive,
+                              isBooked && styles.timeChipTextBooked
+                            ]}
+                          >
                             {t}
                           </Text>
                         </TouchableOpacity>
@@ -677,14 +752,16 @@ const BookingScreen = () => {
                       <Text style={styles.receiptValue}>{guestsCount} kishi</Text>
                     </View>
                     <View style={styles.receiptRow}>
-                      <Text style={styles.receiptLabel}>Xona narxi</Text>
+                      <Text style={styles.receiptLabel}>
+                        {selectedVenue.type === 'vip' ? 'Xona narxi' : 'Stol narxi'}
+                      </Text>
                       <Text style={styles.receiptValue}>{formatPrice(selectedVenue.price_per_hour)}</Text>
                     </View>
                     <View style={styles.receiptDivider} />
                     <View style={[styles.receiptRow, { marginBottom: 0 }]}>
                       <Text style={styles.receiptTotalLabel}>Jami</Text>
                       <Text style={styles.receiptTotalValue}>
-                        {selectedVenue.price_per_hour === 0 ? "Bepul" : formatPrice(selectedVenue.price_per_hour)}
+                        {formatPrice(selectedVenue.price_per_hour)}
                       </Text>
                     </View>
                   </View>
@@ -1409,5 +1486,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: TEXT_DARK,
+  },
+  timeChipBooked: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+    opacity: 0.5,
+  },
+  timeChipTextBooked: {
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
   },
 });

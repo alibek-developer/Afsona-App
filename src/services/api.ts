@@ -54,7 +54,7 @@ export const fetchMenuItemsWithCategories = async (
 			.eq('is_available', true)
 
 		if (categoryId && categoryId !== 'all') {
-			query = query.eq('category_id', categoryId)
+			query = query.or(`category_id.eq.${categoryId},category.eq.${categoryId}`)
 		}
 
 		const { data, error } = await query
@@ -72,7 +72,7 @@ export const fetchMenuItemsWithCategories = async (
 		// Transform data to include category_name from the join
 		return data.map(item => ({
 			...item,
-			category_name: (item.categories as any)?.name || item.category_id,
+			category_name: (item.categories as any)?.name || item.category || item.category_id,
 		}))
 	} catch (error) {
 		console.error('❌ Error fetching menu items, using fallback:', error)

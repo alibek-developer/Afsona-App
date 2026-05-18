@@ -43,6 +43,7 @@ function MenuScreen() {
   const { cartItems } = useCart()
 
   const [categories, setCategories] = useState<Category[]>([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [foodItems, setFoodItems] = useState<MenuItem[]>([])
@@ -61,7 +62,7 @@ function MenuScreen() {
       setCategories(categoriesData)
       setBanners(bannersData)
       await fetchMenuItems(
-        selectedCategoryName === 'all' ? undefined : selectedCategoryName
+        selectedCategoryId === 'all' ? undefined : selectedCategoryId
       )
     } catch (error) {
       console.error('Data loading error:', error)
@@ -74,7 +75,7 @@ function MenuScreen() {
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     loadData()
-  }, [selectedCategoryName])
+  }, [selectedCategoryId])
 
   const fetchMenuItems = async (categoryId?: string) => {
     try {
@@ -95,10 +96,10 @@ function MenuScreen() {
   useEffect(() => {
     if (!categoriesLoading) {
       fetchMenuItems(
-        selectedCategoryName === 'all' ? undefined : selectedCategoryName
+        selectedCategoryId === 'all' ? undefined : selectedCategoryId
       )
     }
-  }, [selectedCategoryName])
+  }, [selectedCategoryId])
 
   const filteredData = (
     selectedCategoryName?.toLowerCase() === 'combo' ? COMBO_SETS : foodItems || []
@@ -225,18 +226,20 @@ function MenuScreen() {
           >
             <CategoryItem
               name='Hammasi'
-              isActive={selectedCategoryName === 'all'}
+              isActive={selectedCategoryId === 'all'}
               onPress={() => {
                 LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+                setSelectedCategoryId('all')
                 setSelectedCategoryName('all')
               } } />
             {(categories || []).map(cat => (
               <CategoryItem
                 key={cat.id}
                 name={cat.name}
-                isActive={selectedCategoryName === cat.name}
+                isActive={selectedCategoryId === cat.id}
                 onPress={() => {
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+                  setSelectedCategoryId(cat.id)
                   setSelectedCategoryName(cat.name)
                 } } />
             ))}
