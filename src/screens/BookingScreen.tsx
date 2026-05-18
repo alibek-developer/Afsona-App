@@ -116,6 +116,7 @@ const BookingScreen = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
+  const submittingRef = useRef(false);
 
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -343,6 +344,7 @@ const BookingScreen = () => {
   };
 
   const handleSubmit = async () => {
+    if (submittingRef.current) return;
     const cleanPhone = formData.phone.replace(/\s+/g, '');
     if (!formData.customer_name.trim()) {
       Alert.alert('Xatolik', 'Iltimos, ism-familiyangizni kiriting');
@@ -354,6 +356,7 @@ const BookingScreen = () => {
     }
 
     try {
+      submittingRef.current = true;
       setSubmitting(true);
       
       // Calculate end time (+3 hours standard reservation length)
@@ -379,6 +382,7 @@ const BookingScreen = () => {
       if (doubleCheck && doubleCheck.length > 0) {
         Alert.alert('Band qilingan', 'Afsuski, ushbu vaqtda bu joy hozirgina boshqa mijoz tomonidan band qilindi. Iltimos, boshqa soat yoki kunni tanlang.');
         checkVenueAvailability(selectedVenue!.id, reservationDateStr);
+        submittingRef.current = false;
         setSubmitting(false);
         return;
       }
@@ -410,6 +414,7 @@ const BookingScreen = () => {
       console.error('Submit reservation error:', error);
       Alert.alert('Xatolik', 'Bron qilishda xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

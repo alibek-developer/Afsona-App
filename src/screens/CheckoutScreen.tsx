@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useNavigation } from '@react-navigation/native'
 import Constants from 'expo-constants'
 import * as Location from 'expo-location'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef } from 'react'
 import {
 	ActivityIndicator,
 	Alert,
@@ -42,6 +42,7 @@ const CheckoutScreen = () => {
 	const [customerPhone, setCustomerPhone] = useState('+998')
 	const [loadingLocation, setLoadingLocation] = useState(false)
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const submittingRef = useRef(false)
 
 	const [coords, setCoords] = useState<{
 		latitude: number
@@ -225,6 +226,8 @@ const CheckoutScreen = () => {
 	}
 
 	const handleConfirmOrder = async () => {
+		if (submittingRef.current) return
+
 		if (!customerName.trim() || customerPhone.length < 13) {
 			Alert.alert('Xato', "Ism va to'liq telefon raqamini kiriting")
 			return
@@ -246,6 +249,7 @@ const CheckoutScreen = () => {
 			return
 		}
 
+		submittingRef.current = true
 		setIsSubmitting(true)
 		try {
 			const deviceId = await getOrCreateDeviceId()
@@ -345,6 +349,7 @@ const CheckoutScreen = () => {
 
 			Alert.alert('Xato', `Buyurtma yuborishda xatolik: ${errorMessage}`)
 		} finally {
+			submittingRef.current = false
 			setIsSubmitting(false)
 		}
 	}
